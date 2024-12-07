@@ -3,7 +3,13 @@ uuid = "721cb36f-8cdb-4047-ab39-84aff8fc02a4"
 authors = ["John Lapeyre <jlapeyre@users.noreply.github.com> and contributors"]
 version = "1.0.0-DEV"
 
+[deps]
+HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
+JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
+
 [compat]
+HTTP = "1.10.10"
+JSON3 = "1.14.0"
 julia = "1.6.7"
 
 [extras]
