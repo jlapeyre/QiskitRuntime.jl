@@ -1,6 +1,10 @@
-using QiskitRuntimeREST
+using QiskitRuntime
+import Dates
 using Test
+import JSON3
 
-@testset "QiskitRuntimeREST.jl" begin
-    # Write your tests here.
-end
+using QiskitRuntime.PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin
+import BitsX: BitArrayAlt, bstring
+
+include("test_aqua.jl")
+include("test_qiskit_runtime.jl")
