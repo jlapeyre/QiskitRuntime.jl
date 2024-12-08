@@ -57,16 +57,20 @@ function jobs(service=nothing; tags=nothing)
     GET_request("jobs", service; tags)
 end
 
-function job(id::String, service=nothing)
-    GET_request("jobs/$id", service)
+function job(job_id::String, service=nothing)
+    GET_request("jobs/$job_id", service)
 end
 
-function results(id::String, service=nothing)
-    GET_request("jobs/$id/results", service)
+function results(job_id::String, service=nothing)
+    GET_request("jobs/$job_id/results", service)
 end
 
-function transpiled_circuits(id::String, service=nothing)
-    GET_request("jobs/$id/transpiled_circuits", service)
+function metrics(job_id::String, service=nothing)
+    GET_request("jobs/$job_id/metrics", service)
+end
+
+function transpiled_circuits(job_id::String, service=nothing)
+    GET_request("jobs/$job_id/transpiled_circuits", service)
 end
 
 ###
@@ -107,10 +111,20 @@ function backends(service=nothing; provider=nothing)
     GET_request("backends", service; provider)
 end
 
-# Should be called backend_status. But we follow the online REST API docs.
-function system_status(backend_name::AbstractString, service=nothing)
+function backend_status(backend_name::AbstractString, service=nothing)
     GET_request("backends/$backend_name/status", service)
 end
 
+function backend_configuration(backend_name::AbstractString, service=nothing)
+    GET_request("backends/$backend_name/configuration", service)
+end
+
+function backend_defaults(backend_name::AbstractString, service=nothing)
+    GET_request("backends/$backend_name/defaults", service)
+end
+
+function backend_properties(backend_name::AbstractString, service=nothing; updated_before=nothing)
+    GET_request("backends/$backend_name/properties", service; updated_before)
+end
 
 end # module Requests
