@@ -2,7 +2,7 @@ module JSON
 
 using JSON3
 
-function read(str::AbstractString)
+function read(str::Union{AbstractString, AbstractVector{UInt8}})
     JSON3.read(str)
 end
 

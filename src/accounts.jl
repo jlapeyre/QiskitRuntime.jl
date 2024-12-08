@@ -3,6 +3,10 @@
 #     instance::String
 # end
 
+module Accounts
+
+import ..JSON
+
 struct Account{PT}
     channel::String
     url::String
@@ -43,3 +47,5 @@ end
         # self.proxies = proxies
         # self.verify = verify
         # self.private_endpoint: bool = False
+
+end # module Accounts
