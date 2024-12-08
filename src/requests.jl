@@ -21,6 +21,26 @@ function headers(service::Service)
          "Authorization" => "Bearer $token")
 end
 
+function _get_instance(service::Service)
+    service.acct.instance
+end
+
+# Return (service, instance). If input `service` is `nothing`
+# get default service
+# This a small efficiency hack.
+# We sometimes want to use the default provider (instance),
+# when `service` was not provided.
+# We could create `service` just to extract `instance`.
+# But `service` will be created in a downstream call to `GET_request`.
+# Here we avoid creating it twice.
+# This involves reading the user's config file (or ENV variable, etc.)
+# It takes about 0.5 ms on my machine.
+function _service_instance(service::Union{Nothing, Service})
+    service = isnothing(service) ? Service() : service
+    instance = _get_instance(service)
+    (service, instance)
+end
+
 function GET_request(endpoint::String, service::Service; kws...)
     url = joinpath(service.base_url, endpoint)
     kws = filter(q -> !isnothing(q.second), kws)
@@ -37,16 +57,16 @@ function jobs(service=nothing; tags=nothing)
     GET_request("jobs", service; tags)
 end
 
-function job(id::String)
-    GET_request("jobs/$id")
+function job(id::String, service=nothing)
+    GET_request("jobs/$id", service)
 end
 
-function results(id::String)
-    GET_request("jobs/$id/results")
+function results(id::String, service=nothing)
+    GET_request("jobs/$id/results", service)
 end
 
-function transpiled_circuits(id::String)
-    GET_request("jobs/$id/transpiled_circuits")
+function transpiled_circuits(id::String, service=nothing)
+    GET_request("jobs/$id/transpiled_circuits", service)
 end
 
 ###
@@ -54,12 +74,42 @@ end
 ###
 
 # Julia has `Base.instances`. So we call this `user_instances`.
-function user_instances()
-    GET_request("instances")
+function user_instances(service=nothing)
+    GET_request("instances", service)
 end
 
-function user()
-    GET_request("users/me")
+function user(service=nothing)
+    GET_request("users/me", service)
+end
+
+# This may not be working correctly
+function hub_workloads(service=nothing; instance=nothing)
+    if isnothing(instance)
+        service = Service()
+        instance = get_instance(service)
+    end
+    GET_request("workloads/admin", service; instance)
+end
+
+# Provider is the same thing as an instance here, I think
+"""
+    backends(service=nothing; provider=nothing)
+
+Return list of backends. If `provider` is `:all`, then
+return all backends.
+"""
+function backends(service=nothing; provider=nothing)
+    if provider == :all
+        provider = nothing
+    else
+        (service, provider) = _service_instance(service)
+    end
+    GET_request("backends", service; provider)
+end
+
+# Should be called backend_status. But we follow the online REST API docs.
+function system_status(backend_name::AbstractString, service=nothing)
+    GET_request("backends/$backend_name/status", service)
 end
 
 
