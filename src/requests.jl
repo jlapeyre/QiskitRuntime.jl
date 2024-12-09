@@ -2,7 +2,8 @@ module Requests
 
 import HTTP
 import URIs
-import ..Accounts: QuantumAccount, read_account_from_config_file
+import ..Accounts: QuantumAccount
+import ..Accounts
 import ..JSON
 
 const _DEFAULT_RUNTIME_BASE_URL = URIs.URI("https://api.quantum-computing.ibm.com/runtime")
@@ -13,7 +14,7 @@ struct Service
 end
 
 Service(acct) = Service(acct, _DEFAULT_RUNTIME_BASE_URL)
-Service() = Service(read_account_from_config_file())
+Service() = Service(Accounts.get_account())
 
 function headers(service::Service)
     token = service.acct.token

@@ -12,6 +12,7 @@ const _DEFAULT_ACCOUNT_NAME = "default"
 const _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
 const _DEFAULT_ACCOUNT_NAME_IBM_CLOUD = "default-ibm-cloud"
 const _DEFAULT_CHANNEL_TYPE = "ibm_cloud"
+const _IBM_QUANTUM_CHANNEL = "ibm_quantum"
 const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
 
 
@@ -55,7 +56,13 @@ function _read_account_config_file_json()
     return accts_json
 end
 
-function read_account_from_config_file()
+function get_account()
+    from_env = _get_account_from_env_variables()
+    ! isnothing(from_env) && return from_env
+    return _read_account_from_config_file()
+end
+
+function _read_account_from_config_file()
     accts_json = _read_account_config_file_json()
     # The only account is default-ibm-quantum.
     # This is dict-like, with a single keydefault-ibm-quantum.
@@ -63,6 +70,14 @@ function read_account_from_config_file()
     acct = accts_json[_DEFAULT_ACCOUNT_NAME_IBM_QUANTUM]
     return QuantumAccount(acct.channel, acct.instance, acct.url, acct.token;
                    private_endpoint=acct.private_endpoint)
+end
+
+function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
+    channel = get(ENV, "QISKIT_IBM_CHANNEL", _IBM_QUANTUM_CHANNEL)
+    instance = get(ENV, "QISKIT_IBM_INSTANCE", false) || return nothing
+    token = get(ENV, "QISKIT_IBM_TOKEN", false) || return nothing
+    url = get(ENV, "QISKIT_IBM_URL", false) || return nothing
+    return QuantumAccount(channel, instance, url, token)
 end
 
 # QISKIT_IBM_TOKEN
