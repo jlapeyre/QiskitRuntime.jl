@@ -70,6 +70,11 @@ function metrics(job_id::String, service=nothing)
     GET_request("jobs/$job_id/metrics", service)
 end
 
+# Not authorized to perform this action
+function admin_metrics(job_id::String, service=nothing)
+    GET_request("admin/jobs/$job_id/metrics", service)
+end
+
 function transpiled_circuits(job_id::String, service=nothing)
     GET_request("jobs/$job_id/transpiled_circuits", service)
 end
@@ -127,5 +132,50 @@ end
 function backend_properties(backend_name::AbstractString, service=nothing; updated_before=nothing)
     GET_request("backends/$backend_name/properties", service; updated_before)
 end
+
+function run_job()
+    service = Service()
+    endpoint = "jobs"
+    url = joinpath(service.base_url, endpoint)
+    quantum_program =
+        """
+OPENQASM 3.0;
+include "stdgates.inc";
+bit[2] meas;
+rz(pi/2) \$0;
+sx \$0;
+rz(pi/2) \$0;
+cx \$0, \$1;
+meas[0] = measure \$0;
+meas[1] = measure \$1;
+"""
+
+    params = Dict(
+    "pubs" => [[
+        quantum_program, [], 128]],
+# Failure:  "supports_qiskit" is unknown parameter
+#    "supports_qiskit" => false,
+    "version" => 2,
+    )
+    headers = Dict(
+        "Accept" => "application/json",
+        "Content-Type" => "application/json",
+        "Authorization" => "Bearer $(service.acct.token)"
+    )
+    body = JSON.write(Dict(
+        "program_id" => "sampler",
+        "hub" => "client-enablement",
+        "group" => "solutions",
+        "project" => "demo-testing",
+        "backend" => "ibm_torino",
+        "params" => params,
+    ))
+
+    HTTP.post(url; body, headers)
+end
+
+# 'client-enablement/solutions/demo-testing'
+
+# resp = HTTP.post("http://httpbin.org/body"; body=Dict("nm" => "val"))
 
 end # module Requests

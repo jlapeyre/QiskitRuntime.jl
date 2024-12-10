@@ -6,6 +6,7 @@
 module Accounts
 
 import ..JSON
+import ..Instances
 
 const _DEFAULT_ACCOUNT_CONFIG_JSON_FILE = joinpath(homedir(), ".qiskit", "qiskit-ibm.json")
 const _DEFAULT_ACCOUNT_NAME = "default"
@@ -25,7 +26,7 @@ struct QuantumAccount{PT}
     channel::String
     url::String
     token::String
-    instance::String
+    instance::Instances.Instance
     private_endpoint::Bool
     verify::Bool
     proxies::PT
@@ -40,6 +41,9 @@ function Base.show(io::IO, ::MIME"text/plain", acct::QuantumAccount)
     println(io," verify = ", acct.verify, ",")
     println(io, " proxies = ",acct.proxies, "\n)")
 end
+
+QuantumAccount(channel, instance::AbstractString, url, token; kws...) =
+    QuantumAccount(channel, Instances.Instance(instance), url, token; kws...)
 
 function QuantumAccount(channel, instance, url, token;
                  private_endpoint::Bool=false, verify::Bool=false,
@@ -79,11 +83,5 @@ function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
     url = get(ENV, "QISKIT_IBM_URL", false) || return nothing
     return QuantumAccount(channel, instance, url, token)
 end
-
-# QISKIT_IBM_TOKEN
-# QISKIT_IBM_URL
-# QISKIT_IBM_INSTANCE
-# QISKIT_IBM_CHANNEL
-
 
 end # module Accounts
