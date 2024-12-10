@@ -5,10 +5,11 @@ export Service, jobs, job, results, user_instances, user, hub_workloads,
     backend_properties, metrics,
     run_job
 
-export Backend, BackendProperties, backends, backend_status
+export Backend, BackendProperties, backends, BackendStatus, backend_status
 
 export Instance
 
+include("utils.jl")
 include("json.jl")
 include("instances.jl")
 include("accounts.jl")
@@ -20,7 +21,7 @@ import .Requests: Service, jobs, job, results, user_instances, user, hub_workloa
     backend_properties, metrics,
     run_job
 
-import .Backends: Backend, BackendProperties, backends, backend_status
+import .Backends: Backend, BackendProperties, backends, BackendStatus, backend_status
 
 import .Instances: Instance
 

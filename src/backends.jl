@@ -3,6 +3,7 @@ module Backends
 import Dates
 
 import ..Requests
+import ..Utils
 
 struct BackendProperties
     backend_name::String
@@ -60,7 +61,7 @@ function backends(service=nothing; pending=false, testing=false, instance=nothin
     pending_jobs =
         [backend_status(b).pending_jobs for b in backend_names]
     names_pending = collect(zip(backend_names, pending_jobs))
-    sort!(names_pending; lt= (x,y) -> x[2] < y[2])
+    sort!(names_pending; lt = (x,y) -> x[2] < y[2])
     names_pending
 end
 
@@ -71,6 +72,8 @@ struct BackendStatus
     pending_jobs::Int
     status_msg::String
 end
+
+Base.show(io::IO, ::MIME"text/plain", bs::BackendStatus) = Utils._show(io, bs)
 
 function backend_status(backend_name::AbstractString, service=nothing)
     st = Requests.backend_status(backend_name, service)
