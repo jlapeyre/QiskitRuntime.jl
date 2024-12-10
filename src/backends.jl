@@ -43,9 +43,19 @@ function Backend(name::AbstractString)
 end
 
 # Several words for one thing: provider == instance = hubgroupproject
-function backends(service=nothing; pending=false, instance=nothing)
+"""
+    backends(service=nothing; pending=false, testing=false, instance=nothing)
+
+Return a list of available backends. If `pending` is `true`, then return
+a list of tuples `(name, num_pending_jobs)` sorted by `num_pending_jobs`.
+If `testing` is `true` then include test devices; those beginning with `"test_"`.
+"""
+function backends(service=nothing; pending=false, testing=false, instance=nothing)
     backend_result = Requests.backends(service; provider=instance)
     backend_names = collect(backend_result.devices)
+    if !testing
+        backend_names = filter(!startswith("test_"), backend_names)
+    end
     pending || return backend_names
     pending_jobs =
         [backend_status(b).pending_jobs for b in backend_names]
