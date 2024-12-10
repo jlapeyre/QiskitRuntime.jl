@@ -43,9 +43,35 @@ function Backend(name::AbstractString)
 end
 
 # Several words for one thing: provider == instance = hubgroupproject
-function backends(service=nothing; instance=nothing)
+function backends(service=nothing; pending=false, instance=nothing)
     backend_result = Requests.backends(service; provider=instance)
-    collect(backend_result.devices)
+    backend_names = collect(backend_result.devices)
+    pending || return backend_names
+    pending_jobs =
+        [backend_status(b).pending_jobs for b in backend_names]
+    names_pending = collect(zip(backend_names, pending_jobs))
+    sort!(names_pending; lt= (x,y) -> x[2] < y[2])
+    names_pending
+end
+
+struct BackendStatus
+#    backend_name::String
+    backend_version::Union{Nothing, VersionNumber}
+    operational::Bool
+    pending_jobs::Int
+    status_msg::String
+end
+
+function backend_status(backend_name::AbstractString, service=nothing)
+    st = Requests.backend_status(backend_name, service)
+    version = isempty(st.backend_version) ?
+        nothing : VersionNumber(st.backend_version)
+    BackendStatus(
+        # st.backend_name,
+        version,
+        st.state, # operational
+        st.length_queue, # pending_jobs
+        st.message)
 end
 
 end # module Backends

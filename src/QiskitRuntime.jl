@@ -1,11 +1,11 @@
 module QiskitRuntime
 
 export Service, jobs, job, results, user_instances, user, hub_workloads,
-    backend_status, backend_configuration, backend_defaults,
+    backend_configuration, backend_defaults,
     backend_properties, metrics,
     run_job
 
-export Backend, BackendProperties, backends
+export Backend, BackendProperties, backends, backend_status
 
 export Instance
 
@@ -16,11 +16,11 @@ include("requests.jl")
 include("backends.jl")
 
 import .Requests: Service, jobs, job, results, user_instances, user, hub_workloads,
-    backend_status, backend_configuration, backend_defaults,
+    backend_configuration, backend_defaults,
     backend_properties, metrics,
     run_job
 
-import .Backends: Backend, BackendProperties, backends
+import .Backends: Backend, BackendProperties, backends, backend_status
 
 import .Instances: Instance
 
