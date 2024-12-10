@@ -42,10 +42,10 @@ function Backend(name::AbstractString)
     Backend(backend_name, VersionNumber(backend_version), props_obj)
 end
 
-function backends()
-    Requests.backends
-#    collect(
+# Several words for one thing: provider == instance = hubgroupproject
+function backends(service=nothing; instance=nothing)
+    backend_result = Requests.backends(service; provider=instance)
+    collect(backend_result.devices)
 end
-
 
 end # module Backends

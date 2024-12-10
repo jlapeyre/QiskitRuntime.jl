@@ -42,10 +42,31 @@ function _service_instance(service::Union{Nothing, Service})
     (service, instance)
 end
 
+# Filter queries:
+# 1. values `nothing` are removed
+# 2. `Instance` converted to `String`
+# 3. All others passed unchanged.
+# Eh, this is a bit clumsy. Things were ok, except we need
+# to convert `Instance` to a `String`. But kws are immuatble
+# kws = filter(q -> !isnothing(q.second), kws) no longer works
+function _filer_request_queries(kws)
+    query = Dict{Symbol, String}()
+    for (k, v) in kws
+        v == nothing && continue
+        if k == :provider
+            query[k] = string(v)
+        else
+            query[k] = v
+        end
+    end
+    return query
+end
+
 function GET_request(endpoint::String, service::Service; kws...)
     url = joinpath(service.base_url, endpoint)
-    kws = filter(q -> !isnothing(q.second), kws)
-    JSON.read(HTTP.get(url, headers(service); query=kws).body)
+#    kws = filter(q -> !isnothing(q.second), kws)
+    query = _filer_request_queries(kws)
+    JSON.read(HTTP.get(url, headers(service); query=query).body)
 end
 GET_request(endpoint::String, ::Nothing; kws...) = GET_request(endpoint, Service(); kws...)
 GET_request(endpoint::String; kws...) = GET_request(endpoint, Service(); kws...)
