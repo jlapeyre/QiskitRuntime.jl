@@ -1,3 +1,46 @@
+module PauliOperators
+
+###
+### This is vendored from QuantumClifford because it is much faster to load than the entire package.
+### I did not vendor `Tableau`, which is a table of PauliOperators. I can do that later if we stick
+### with this representation.
+
+export @P_str, PauliOperator  # Following are exported in the original ⊗, I, X, Y, Z,
+
+import LinearAlgebra
+
+# Stuff copied from elsewhere in QuantumClifford
+# Predefined constants representing the permitted phases encoded
+# in the low bits of UInt8.
+const _p  = 0x00
+const _pi = 0x01
+const _m  = 0x02
+const _mi = 0x03
+
+const phasedict = Dict(""=>_p,"+"=>_p,"i"=>_pi,"+i"=>_pi,"-"=>_m,"-i"=>_mi)
+const toletter = Dict((false,false)=>"_",(true,false)=>"X",(false,true)=>"Z",(true,true)=>"Y")
+
+abstract type AbstractOperation end
+abstract type AbstractCliffordOperator <: AbstractOperation end
+
+xz2str(x,z) = join(toletter[e] for e in zip(x,z))
+
+function xz2str_limited(x,z, limit=50)
+    tupl = collect(zip(x,z))
+    n = length(tupl)
+    if (ismissing(limit) || limit >= n)
+        return xz2str(x, z)
+    end
+    padding = limit÷2
+    return join(toletter[tupl[i]] for i in 1:padding) * "⋯" * join(toletter[tupl[i]] for i in (n-padding):n)
+end
+
+
+####
+#### pauli_operator.jl
+####
+
+
 """
 A multi-qubit Pauli operator (``±\\{1,i\\}\\{I,Z,X,Y\\}^{\\otimes n}``).
 
@@ -56,6 +99,40 @@ end
 PauliOperator(x::AbstractVector{Bool}, z::AbstractVector{Bool}) = PauliOperator(0x0, x, z)
 PauliOperator(xz::AbstractVector{Bool}) = PauliOperator(0x0, (@view xz[1:end÷2]), (@view xz[end÷2+1:end]))
 
+"""
+    PauliOperator(str::AbstractString)
+
+Construct a `PauliOperator` from a string representation
+
+# Examples
+```jldoctest
+julia> PauliOperator("XYZ")
++ XYZ
+
+julia> PauliOperator("-iXYZ")
+-iXYZ
+```
+"""
+function PauliOperator(str::AbstractString)
+    _P_str(str)
+end
+
+#### Copied from QuantumClifford.jl
+####
+_show(io::IO, p::PauliOperator, limit=50) = print(io, ["+ ","+i","- ","-i"][p.phase[]+1]*xz2str_limited(xbit(p),zbit(p), limit))
+
+function Base.show(io::IO, p::PauliOperator)
+    if get(io, :compact, false) | haskey(io, :typeinfo)
+        _show(io, p, 10)
+    elseif get(io, :limit, false)
+        sz = displaysize(io)
+        _show(io, p, max(2, sz[2]-7))
+    else
+        _show(io, p, missing)
+    end
+end
+####
+
 """Get a view of the X part of the `UInt` array of packed qubits of a given Pauli operator."""
 function xview(p::PauliOperator)
     @view p.xz[1:end÷2]
@@ -77,6 +154,7 @@ function zbit(p::PauliOperator)
     [(word>>s)&one==one for word in zview(p) for s in 0:size-1][begin:p.nqubits]
 end
 
+# TODO: This coulde be more efficient
 function _P_str(a::Union{String,SubString{String}})
     letters = filter(x->occursin(x,"_IZXY"),a)
     phase = phasedict[strip(filter(x->!occursin(x,"_IZXY"),a))]
@@ -196,3 +274,5 @@ function embed(n::Int, indices, p::PauliOperator)
         """))
     end
 end
+
+end # module PauliOperators
