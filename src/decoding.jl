@@ -18,7 +18,7 @@ import ..PauliOperators: PauliOperator
 import JSON3
 
 import ..PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin, Metadata,
-    PubResult, ExecutionSpan
+    PubResult, ExecutionSpan, LayerError, PauliLindbladError
 import BitsX
 
 # TYPE_MAP is not used at the moment
@@ -164,6 +164,10 @@ function decode(dict::Union{JSON3.Object, Dict})
         bitarrayalt_from_qiskit_bitarray(array, num_bits)
     elseif _type == :PauliList
         map(PauliOperator, _value.data)
+    elseif _type == :LayerError
+        LayerError(decode(_value.circuit), decode(_value.error), decode(_value.qubits))
+    elseif _type == :PauliLindbladError
+        PauliLindbladError(decode(_value.generators), decode(_value.rates))
     else
         # This is an encoded typed value, but we don't recognize it.
         # So we return the default JSON3 encoding
