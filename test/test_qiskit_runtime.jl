@@ -34,6 +34,5 @@ end
     # and populated efficiently. But that will take work to implement for BitArrayAlt.
     # It may not be worth the effort. Instead, copy to Base.BitArray
     @test bit_arr2 isa Vector{Bool}
-
-    @test bstring(bit_arr2) == "0010110100"
+    @test bit_arr2 == Bool[0, 0, 1, 0, 1, 1, 0, 1, 0, 0]
 end

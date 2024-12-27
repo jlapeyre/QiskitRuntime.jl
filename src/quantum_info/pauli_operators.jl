@@ -1,16 +1,17 @@
 module PauliOperators
 
 ###
-### This is vendored from QuantumClifford because it is much faster to load than the entire package.
-### I did not vendor `Tableau`, which is a table of PauliOperators. I can do that later if we stick
-### with this representation.
+### Vendored at 6065fab7 from QuantumClifford.jl. This is vendored it is much faster to
+### load than the entire package.  I did not vendor `Tableau`, which is a table of
+### PauliOperators. I can do that later if we stick with this representation.
+###
 
 export @P_str, PauliOperator  # Following are exported in the original ⊗, I, X, Y, Z,
 
 import LinearAlgebra
 
-# Stuff copied from elsewhere in QuantumClifford
-# Predefined constants representing the permitted phases encoded
+# Neccesary stuff copied from elsewhere in QuantumClifford.
+# Predefined constants representing the permitted phases encoded.
 # in the low bits of UInt8.
 const _p  = 0x00
 const _pi = 0x01

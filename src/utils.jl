@@ -1,7 +1,7 @@
 module Utils
 
 # Show object optionally with field_names and newlines between fields.
-function _show(io::IO, object; field_names=true, newlines=false, indent=0)
+function _show(io::IO, object; field_names=true, newlines=false, indent=0) # printfields::Bool=false)
     T = typeof(object)
     fnames = fieldnames(T)
 
@@ -17,10 +17,12 @@ function _show(io::IO, object; field_names=true, newlines=false, indent=0)
         if field_names
             showfunc(io, field, " = ")
         end
-        # obj = getproperty(object, field)
-        # if isa(obj, AbstractDict)
-        # end
-        show(io, MIME"text/plain"(), getproperty(object, field))
+        subobj = getproperty(object, field)
+        if isa(subobj, Array)
+            print(io, subobj)
+        else
+            show(io, MIME"text/plain"(), subobj)
+        end
         if n != length(fnames)
             showfunc(", ")
         end

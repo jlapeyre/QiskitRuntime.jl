@@ -25,26 +25,18 @@ end
 
 Base.print(io::IO, id::JobId) = print(io, id.id)
 
-# For automatic conversion to `String` at call sites.
-Base.convert(String, id::JobId) = string(id)
+# It's not clear to me where these are used
+Base.convert(::Type{String}, id::JobId) = string(id)
+Base.convert(::Type{JobId}, id::AbstractString) = JobId(id)
 
 # For `id * ".json"
 Base.:*(id::JobId, s::String) = string(id) * s
 Base.:*(s::String, id::JobId) = s * string(id)
 
-# function Base.convert(::Type{String}, job_id::JobId)
-#     string(job_id)
-# end
-# function Base.convert(::Type{JobId}, job_id::String)
-#     JobId(job_id)
-# end
-
 @enum JobStatus Queued Running Done Error Cancelled
 
-abstract type Primitive end
+@enum PrimitiveType Estimator Sampler
 
-struct Sampler <: Primitive end
-struct Estimator <: Primitive end
 # We need to do something better with options and pubs
 struct JobParams
     support_qiskit::Union{Bool, Nothing}
@@ -75,11 +67,11 @@ end
 # struct JobInfo
 # end
 
-struct RuntimeJob{PrimitiveT}
+struct RuntimeJob
     job_id::JobId
     user_id::UserId
     session_id::Union{JobId, Nothing}
-    primitive_id::PrimitiveT
+    primitive_id::PrimitiveType
     backend_name::String
     creation_date::DateTime
     end_date::Union{DateTime, Nothing}
@@ -110,19 +102,6 @@ import ...Requests
 import ..JobId, ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
     ..Sampler, ..Estimator, ..RuntimeJob
 
-# We want to encode "sampler" and "estimator"
-# in a type, or proscribed values. But this is clunky.
-# Perhaps an enum.
-function _primitive(_primitive::AbstractString)
-    if _primitive == "sampler"
-        Sampler()
-    elseif _primitive == "estimator"
-        Estimator()
-    else
-        error("Uknown primitive \"$_primitive\"") # Make this Lazy !
-    end
-end
-
 # Precompile and hide data in let block for _api_to_job_status
 let dict = Dict(
     :Queued => Queued,
@@ -136,6 +115,12 @@ let dict = Dict(
     function _api_to_job_status(api_status)
         return dict[Symbol(api_status)]
     end
+end
+
+function _api_to_primitive_type(api_primitive)
+    api_primitive == "estimator" && return Estimator
+    api_primitive == "sampler" && return Sampler
+    throw(ValueError(lazy"Unknown primitive type \"$api_primitive\""))
 end
 
 function _make_job(response)
@@ -154,7 +139,7 @@ function _make_job(response)
         JobId(response.id), # job_id
         UserId(response.user_id), # user_id
         session_id, # session_id
-        _primitive(response.program.id), # primitive_id
+        _api_to_primitive_type(response.program.id), # primitive_id
         response.backend, # backend_name
         Decode.parse_response_datetime(response.created), # creation_date
         Decode.parse_response_maybe_datetime(response.ended), # end date
@@ -170,9 +155,7 @@ function _make_job(response)
     )
 end
 
-
 end # module _Jobs
-
 
 # `Requests.cached_job_ids` returns what we want in this layer. So we just
 # import it. Alternative would be to wrap it instead.
@@ -182,7 +165,8 @@ import ..Instances: Instance
 
 import ._Jobs: _make_job
 
-export  job, job_ids, cached_jobs, cached_job_ids, results, user
+export  job, JobId, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
+    PrimitiveType, Estimator, Sampler
 
 """
     job(job_id, service=nothing; refresh=false)::RuntimeJob
@@ -194,7 +178,6 @@ function job(job_id::JobId, _account=nothing; refresh=false)
     job_response = Requests.job(job_id, account; refresh)
     _make_job(job_response)
 end
-
 job(job_id::AbstractString, _account=nothing; kws...) = job(JobId(job_id), _account; kws...)
 
 """

@@ -19,7 +19,7 @@ import JSON3
 
 import ..PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin, Metadata,
     PubResult, ExecutionSpan, LayerError, PauliLindbladError
-import BitsX
+import ..BitArraysX
 
 # TYPE_MAP is not used at the moment
 # const TYPE_MAP = Dict{String, Any}()
@@ -209,7 +209,7 @@ function decode(sym::Symbol)
 end
 
 # Convert data from qiskit `BitArray` (qiskit/primitives/containers/bit_array.py) to a
-# native Julia type `BitsX.BitArrayAlt`.
+# native Julia type `..BitArraysX.BitArrayAlt`.
 #
 # Julia `Base` has a type `BitArray` of arbitrary dimensions that packs bits with no gaps
 # (no unused bits) into a `Vector{UInt64}`.
@@ -224,7 +224,7 @@ end
 # each sequence of three bytes do not encode data. The array is reshaped to a `Vector` of
 # length `3 * 10 * 15` before storage in `BitArrayAlt{UInt8, 3}`.
 #
-# NB `BitsX.BitArrayAlt` was implemented specifically for this application. It is not a as capable
+# NB `BitArrayAlt` was implemented specifically for this application. It is not a as capable
 # as `Base.BitArray`. It would not be difficult to copy the data to a `Base.BitArray`. But this may
 # not be necessary. Also, it may be easier to access the data bitstring-wise from `BitArrayAlt`. It
 # is unfortunate that, while in Python the high bits are zeroed and unused, in Julia, the low bits are
@@ -239,7 +239,7 @@ function bitarrayalt_from_qiskit_bitarray(array::Array{UInt8}, num_bits::Integer
     array = permutedims(array, reverse(1:ndims))
 
     # Reshape to `Vector` and wrap in `Chunks`.
-    chunks = BitsX.Chunks(reshape(array, :))
+    chunks = BitArraysX.Chunks(reshape(array, :))
 
     # Replace the first dimension by the supplied number of bits, `num_bits`.
     # The existing first dimension times 8 must be large enough to accomodate.
@@ -249,10 +249,7 @@ function bitarrayalt_from_qiskit_bitarray(array::Array{UInt8}, num_bits::Integer
     # num_bits <= dim1bits ||
     #     throw(DimensionMismatch(lazy"Required number of bits $num_bits too small for first dimension of array in bits $dim1bits")
     new_dims = @set dims[1] = num_bits
-    BitsX.BitArrayAlt(chunks, new_dims)
+    BitArraysX.BitArrayAlt(chunks, new_dims)
 end
-
-
-
 
 end # module Decode

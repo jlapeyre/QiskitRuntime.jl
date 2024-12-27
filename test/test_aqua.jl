@@ -1,10 +1,9 @@
 using QiskitRuntime
 using Aqua: Aqua
 
-# There are a lot of these
-# @testset "aqua test ambiguities" begin
-#     Aqua.test_ambiguities([QiskitRuntime, Core, Base])
-# end
+@testset "aqua test ambiguities QiskitRuntime Core Base" begin
+    Aqua.test_ambiguities([QiskitRuntime, Core, Base])
+end
 
 @testset "aqua unbound_args" begin
     Aqua.test_unbound_args(QiskitRuntime)

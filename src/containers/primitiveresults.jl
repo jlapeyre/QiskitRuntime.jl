@@ -52,15 +52,6 @@ end
 
 Base.copy(es::ExecutionSpan) = ExecutionSpan(es.start, es.stop, copy(es.data_slices))
 
-struct LayerError
-    circuit::PubEncodedCircuit
-    error
-    qubits::Vector{Int}
-end
-
-Base.show(io::IO, ::MIME"text/plain", le::LayerError) =
-    Utils._show(io, le; newlines=true)
-
 struct PauliLindbladError
     generators::Vector{PauliOperator}
     rates::Vector{Float64}
@@ -68,6 +59,15 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", pe::PauliLindbladError) =
     Utils._show(io, pe; newlines=true)
+
+struct LayerError
+    circuit::PubEncodedCircuit
+    error::PauliLindbladError
+    qubits::Vector{Int}
+end
+
+Base.show(io::IO, ::MIME"text/plain", le::LayerError) =
+    Utils._show(io, le; newlines=true)
 
 # This does not work because some fields have no copy constructor.
 # I don't see an easy way to get this info without an instance of the obj.

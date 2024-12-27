@@ -43,7 +43,7 @@ end
 # This allows automatic conversion to `String` when passing `Instance` as a parameter.
 # If a function expects a string, passing in instance will work.
 # Here `string` falls back to the method for `print` above.
-function Base.convert(String, instance::Instance)
+function Base.convert(::Type{String}, instance::Instance)
     string(instance)
 end
 

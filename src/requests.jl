@@ -108,6 +108,8 @@ function id_from_json_filename(filename)
     id
 end
 
+# read_response_cache(endpoint, id)::JSON3.Object
+# Read and return the cache file associated with `(endpoint, id)` as a JSON object.
 function read_response_cache(endpoint, id)
     cache_file = cache_filename(endpoint, id)
     isfile(cache_file) || return nothing
@@ -139,7 +141,7 @@ end
 # It takes about 0.5 ms on my machine.
 function _qaccount_instance(qaccount::Union{Nothing, QuantumAccount}, instance)
     qaccount = isnothing(qaccount) ? QuantumAccount() : qaccount
-    instance = isnothing(qaccount) ? _get_instance(qaccount) : instance
+    instance = isnothing(instance) ? _get_instance(qaccount) : instance
     (qaccount, instance)
 end
 
@@ -158,14 +160,8 @@ function _filter_request_queries(kws)
     query = Dict{Symbol, Any}()
     for (k, v) in kws
         v == nothing && continue
-        @show (k, v)
         isa(v, Integer) && (v = string(v))
-        if k == :provider
-            query[k] = string(v)
-        else
-            query[k] = v
-        end
-#        query[k] = (k == :provider ? string(v) : v)
+        query[k] = (k == :provider ? string(v) : v)
     end
     return query
 end
@@ -237,10 +233,12 @@ end
 ### Backends
 ###
 
-function _get_backends(qaccount=nothing)
-    GET_request("backends", qaccount; provider)
-end
+# Not finished
+# function _get_backends(qaccount=nothing; provider=nothing)
+#     GET_request("backends", qaccount; provider)
+# end
 
+## FIXME: remove this
 function run_job_test()
     qaccount = QuantumAccount()
     endpoint = "jobs"
@@ -358,7 +356,7 @@ function jobs(qaccount=nothing; tags=nothing)
 end
 
 """
-    cached_job_ids()::Vector{String}
+    cached_job_ids()::Generator{Vector{String}}
 
 Return an iterator over all the job ids associated with cached job info.
 
@@ -424,7 +422,7 @@ I'm pretty sure that "provider" and "instance" mean the same thing.
 
 $(_endpoint("backends", "systems#tags__systems__operations__list_backends"))
 """
-function backends(qaccount=nothing; provider=nothing, refresh=false)
+function backends(qaccount=nothing; provider=nothing)
     # In this package, we use `nothing` to mean it should be filled in later.
     # But the API uses `nothing` to mean "everything".
     if provider == :all

@@ -26,9 +26,9 @@ The following environment variables override defaults.
 module QiskitRuntime
 
 # Vendored at 6065fab7 from QuantumClifford.jl
-include("pauli_operators.jl")
-
+include("quantum_info/pauli_operators.jl")
 include("npz2.jl")
+include("bitarraysx.jl")
 include("utils.jl")
 include("some_types.jl")
 include("containers/primitiveresults.jl")

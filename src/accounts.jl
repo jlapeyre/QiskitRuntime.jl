@@ -1,5 +1,7 @@
 module Accounts
 
+export QuantumAccount
+
 import ..JSON
 import ..Instances
 import ..Utils
@@ -13,8 +15,10 @@ const _DEFAULT_CHANNEL_TYPE = "ibm_cloud"
 const _IBM_QUANTUM_CHANNEL = "ibm_quantum"
 const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
 
-# Note that Python version essentially hardcodes channel == "ibm_quantum"
-# We leave this variable at present
+# Note that Python version essentially hardcodes channel == "ibm_quantum".
+# We leave this variable at present.
+# I have know idea what type `proxies` might be. So the type is parameterized
+# at the moment.
 """
 `struct` that represents an account with channel 'ibm_quantum.'"
 """
