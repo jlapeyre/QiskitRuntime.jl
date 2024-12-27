@@ -14,6 +14,7 @@ import ..NPZ2 as NPZ
 import Dates
 import Base64
 import ..SomeTypes: PubEncodedCircuit
+import ..PauliOperators: PauliOperator
 import JSON3
 
 import ..PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin, Metadata,
@@ -79,7 +80,7 @@ end
 
 # This is a "typed" value that we do not yet handle specially.
 struct Unhandled
-    name::String
+    name::Symbol
     fields
 end
 
@@ -115,14 +116,21 @@ end
 function decode(dict::Union{JSON3.Object, Dict})
     # Some things, like Pauli strings don't have the type and value keys.
     # We don't handle these yet.
-     if !is_typed_value(dict)
-         return Dict(begin
-                         (k, v) = decode(k, v)
-                         k => v
-                     end
-                     for (k, v) in dict)
-     end
-    _type = Symbol(dict[:__type__])
+    if !is_typed_value(dict)
+        return Dict(begin
+                        (k, v) = decode(k, v)
+                        k => v
+                    end
+                    for (k, v) in dict)
+    end
+    type_key = :__type__
+    class = get(dict, :__class__, nothing)
+    type_key = if isnothing(class)
+        :__type__
+    else
+        :__class__
+    end
+    _type = Symbol(dict[type_key])
     _value = dict[:__value__]
     if _type == :QuantumCircuit
         PubEncodedCircuit{:QuantumCircuit}(_value)
@@ -154,11 +162,15 @@ function decode(dict::Union{JSON3.Object, Dict})
         array = decode(_value.array)
         num_bits::Int = _value.num_bits
         bitarrayalt_from_qiskit_bitarray(array, num_bits)
+    elseif _type == :PauliList
+        map(PauliOperator, _value.data)
     else
         # This is an encoded typed value, but we don't recognize it.
         # So we return the default JSON3 encoding
-#        @show typeof(dict.__value__)
-        Unhandled(dict.__type__, decode(dict.__value__))
+        #        @show typeof(dict.__value__)
+        # dict.__type__
+        @show Symbol(_type)
+        Unhandled(Symbol(_type), decode(dict.__value__))
     end
 end
 
