@@ -1,60 +1,33 @@
 module Jobs
 
 using Dates: DateTime
+import Base: Generator
 import ..Instances: Instance
 import ..Accounts: UserId
 import ..Utils
 import ..Decode
-
-let
-function _validate_jobid(job_id::AbstractString)
-    length(job_id) == 20 || error("job id has incorrect length")
-    occursin(r"^[a-z|0-9]+$", job_id) || error("Illegal character in job id")
-    true
-end
-
-global JobId
-struct JobId
-    id::String
-    function JobId(id::String)
-        _validate_jobid(id)
-        new(id)
-    end
-end
-end
-
-Base.print(io::IO, id::JobId) = print(io, id.id)
-
-# It's not clear to me where these are used
-Base.convert(::Type{String}, id::JobId) = string(id)
-Base.convert(::Type{JobId}, id::AbstractString) = JobId(id)
-
-# For `id * ".json"
-Base.:*(id::JobId, s::String) = string(id) * s
-Base.:*(s::String, id::JobId) = s * string(id)
+import ..PrimitiveResults
+import ..SomeTypes: JobId
 
 @enum JobStatus Queued Running Done Error Cancelled
 
 @enum PrimitiveType Estimator Sampler
 
 # We need to do something better with options and pubs
-struct JobParams
+struct JobParams{PT}
     support_qiskit::Union{Bool, Nothing}
     # Avoid futher headaches with versions. But the endpoint returns an Int, so maybe useless.
     version::VersionNumber
     resilience_level::Union{Int, Nothing} # I think this is deprecated
     options::Union{Dict{Symbol, Any}, Nothing}
-    pubs::Vector{Any}
+    pubs::Vector{PT}
 end
 
+Base.show(io::IO, ::MIME"text/plain", p::JobParams) =
+    Utils._show(io, p; newlines=true)
+
 function JobParams(dict::Dict)
-    pubs = [begin
-                [begin
-                     isa(p, Dict{Symbol, <:Any}) ? Decode.decode(p) : p
-                 end
-                 for p in pub]
-             end
-             for pub in dict[:pubs]]
+    pubs = _decode_pubs(dict[:pubs])
     JobParams(
         get(dict, :support_qiskit, nothing),
         VersionNumber(dict[:version]),
@@ -64,10 +37,7 @@ function JobParams(dict::Dict)
     )
 end
 
-# struct JobInfo
-# end
-
-struct RuntimeJob
+struct RuntimeJob{ResultT, ParamsT}
     job_id::JobId
     user_id::UserId
     session_id::Union{JobId, Nothing}
@@ -78,16 +48,36 @@ struct RuntimeJob
     instance::Instance
     # state and status in Python runtime and REST API is quite complicated
     # We simply copy the REST API strings here. But this should be revisted.
-    # If the following two are alwasy the same, we should remove one of them.
-    state::JobStatus
+    # The following two seem to always be the same, so we remove one of them.
+#    state::JobStatus
     status::JobStatus
     cost::Int
     private::Bool
     tags::Vector{String}
-    params::JobParams
+    params::ParamsT # Union{JobParams, Nothing}
+    results::ResultT
 end
 
 Base.show(io::IO, ::MIME"text/plain", rtj::RuntimeJob) =
+    Utils._show(io, rtj; newlines=true)
+
+struct SamplerPub{CT, PT}
+    circuit::CT
+    parameters::Vector{PT}
+    shots::Int
+end
+
+Base.show(io::IO, ::MIME"text/plain", rtj::SamplerPub) =
+    Utils._show(io, rtj; newlines=true)
+
+struct EstimatorPub{CT, PT, OT}
+    circuit::CT
+    observables::OT # ::Vector{OT}
+    parameters::PT  # ::Vector{PT}
+    precision::Float64
+end
+
+Base.show(io::IO, ::MIME"text/plain", rtj::EstimatorPub) =
     Utils._show(io, rtj; newlines=true)
 
 module _Jobs
@@ -98,9 +88,11 @@ import ...Decode
 import ...Instances: Instance
 import ...Accounts: UserId
 import ...Requests
+import ...PauliOperators: PauliOperator
+import ...SomeTypes: JobId
 
-import ..JobId, ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
-    ..Sampler, ..Estimator, ..RuntimeJob
+import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
+    ..Sampler, ..Estimator, ..RuntimeJob, ..PrimitiveType, ..SamplerPub, ..EstimatorPub
 
 # Precompile and hide data in let block for _api_to_job_status
 let dict = Dict(
@@ -123,7 +115,50 @@ function _api_to_primitive_type(api_primitive)
     throw(ValueError(lazy"Unknown primitive type \"$api_primitive\""))
 end
 
-function _make_job(response)
+function _decode_pub_sampler(pub)
+    npub = [ begin
+                p = isa(p, Dict{Symbol, <:Any}) ? Decode.decode(p) : p
+             end
+             for p in pub
+                 ]
+    isnothing(npub[3]) && (npub[3] = 0)
+    SamplerPub(npub...)
+end
+
+function _decode_pub_estimator(pub)
+    decode = Decode.decode
+    (circuit, observables, parameters, precision) = (pub...,)
+    isnothing(precision) && (precision = 0.0)
+    if isa(observables, Dict{Symbol, <:Any})
+        observables = Dict(PauliOperator(String(k)) => v for (k,v) in observables)
+    else
+        observables = decode(observables)
+    end
+    EstimatorPub(decode(circuit), observables, decode(parameters), precision)
+end
+
+function _decode_pubs(primitive_id, pubs)
+    if primitive_id == Estimator
+        [_decode_pub_estimator(pub) for pub in pubs]
+    elseif primitive_id == Sampler
+        [_decode_pub_sampler(pub) for pub in pubs]
+    else
+        throw(ErrorException("Unexpected error")) # should be an assertion or s.t.
+    end
+end
+
+function _job_params(primitive_id::PrimitiveType, dict)
+    pubs = _decode_pubs(primitive_id, dict[:pubs])
+    JobParams(
+        get(dict, :support_qiskit, nothing),
+        VersionNumber(dict[:version]),
+        get(dict, :resilience_level, nothing),
+        get(dict, :options, nothing),
+        pubs
+    )
+end
+
+function _make_job(response, results=nothing; params::Bool=true)
 
     instance = Instance(response.hub, response.group, response.project)
 
@@ -131,27 +166,32 @@ function _make_job(response)
     if ! isnothing(session_id)
         session_id = JobId(session_id)
     end
-
     tags = response.tags
     tags = isnothing(tags) ? String[] : collect(tags)
+
+    primitive_id = _api_to_primitive_type(response.program.id)
+
+    # `copy` converts JSON3 efficienct struction into plain old types.
+    # This is a bit wasteful. We should pass JSON3 first
+    job_params = params ? _job_params(primitive_id, copy(response.params)) : nothing
 
     return RuntimeJob(
         JobId(response.id), # job_id
         UserId(response.user_id), # user_id
         session_id, # session_id
-        _api_to_primitive_type(response.program.id), # primitive_id
+        primitive_id,
         response.backend, # backend_name
         Decode.parse_response_datetime(response.created), # creation_date
         Decode.parse_response_maybe_datetime(response.ended), # end date
         instance, # instance
-        _api_to_job_status(response.state.status), # state
+        # We only keep one of the following
+#        _api_to_job_status(response.state.status), # state
         _api_to_job_status(response.status), # status
         response.cost, # cost
         response.private, # private
         tags, # tags
-        # `copy` converts JSON3 efficienct struction into plain old types.
-        # This is a bit wasteful. We should pass JSON3 first
-        JobParams(copy(response.params))
+        job_params,
+        results
     )
 end
 
@@ -165,28 +205,55 @@ import ..Instances: Instance
 
 import ._Jobs: _make_job
 
-export  job, JobId, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
+export  job, JobId, JobParams, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
     PrimitiveType, Estimator, Sampler
 
 """
-    job(job_id, service=nothing; refresh=false)::RuntimeJob
+    job(job_id::JobId, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)::RuntimeJob
 
 Return information on `job_id`.
+
+- `params`: If `true` include job input parameters (including the [PUBs](https://docs.quantum.ibm.com/guides/primitive-input-output))).
+            Otherwise the field `params` has value `nothing`.
+- `results`: If `true` get the job results, if available. Otherwise, the field `results` has value `nothing`.
+             Results are retrieved via the function [`results`](@ref).
+- `refresh`: If `true` fetch job info and results from the REST API, rather than from cache.
+             This also updates the cache. If `refresh` is `false`, then the cache is preferred.
+
+See [`results`](@ref)
 """
-function job(job_id::JobId, _account=nothing; refresh=false)
-    account = isnothing(_account) ? Accounts.QuantumAccount() : _account
+function job(job_id::JobId, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)
     job_response = Requests.job(job_id, account; refresh)
-    _make_job(job_response)
+    _results = results ? Jobs.results(job_id, account; refresh) : nothing
+    _make_job(job_response, _results; params)
 end
 job(job_id::AbstractString, _account=nothing; kws...) = job(JobId(job_id), _account; kws...)
 
 """
-    job_ids(account=nothing)::Vector
+    job(job_in::RuntimeJob, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)::RuntimeJob
 
-Return a collection of job ids.
+Return information on `job_in`.
 
-`job_ids` first request all the information on the jobs, then
-extracts the ids.
+The fields `job_in.params` and `job_in.results` may have value `nothing`. Use this method to return a copy of `job_in` with
+one or both of these fields populated, according to the keyword arguments `params` and `results`. These keyword arguments
+are described in [`job`](@ref)
+
+!!! note
+    This function would be more useful if it were optimized to fetch only the needed additional data, copying the rest from
+    `jobin`. In fact, at present, it constructs the entire `RuntimeJob` from scratch.
+"""
+function job(_job::RuntimeJob, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)
+    job(_job.job_id, account; params, results, refresh)
+end
+
+"""
+    job_ids(account=nothing)
+
+Return an iterator over `JobId`s for all jobs.
+
+`job_ids` first requests all the information on the jobs, then
+extracts the ids. This function always makes requests to the REST API and
+does not access the cache.
 
 Use [`cached_job_ids`](@ref) to get ids only for cached job requests.
 """
@@ -195,14 +262,30 @@ function job_ids(account=nothing)
     (JobId(id) for id in ids)
 end
 
-function cached_job_ids()
+# The return type does not accurately describe what is returned. :(
+"""
+    cached_job_ids()
+
+Return an iterator over `JobId`s of cached jobs.
+
+Use [`job_ids`](@ref) to request ids from the REST API.
+"""
+function cached_job_ids()::Generator{<:Generator{Vector{String}}}
     ids = Requests.cached_job_ids()
     (JobId(id) for id in ids)
 end
 
-function cached_jobs()
-    job_ids = Requests.cached_job_ids()
-    (job(id) for id in job_ids)
+"""
+    cached_jobs(; params::Bool=true, results::Bool=true)
+
+Return an iterator over all cached jobs.
+
+- `params`: If `true` include job input parameters (including the pubs).  Otherwise the field `params` has
+            value `nothing`.
+- `results`: If `true` get the job results, if available. Otherwise, the field `results` has value `nothing`.
+"""
+function cached_jobs(; params::Bool=true, results::Bool=true)
+    (job(id; params, results) for id in Requests.cached_job_ids())
 end
 
 struct InstancePlan
@@ -228,23 +311,47 @@ function user(account=nothing)
     UserInfo(_user.email, instances)
 end
 
-# Sometimes "result" sometimes "results" in Python version. We should pcik the right one.
+# Sometimes "result" sometimes "results" in Python version. We should pick the right name.
 """
-    results(job_id, service=nothing; refresh=false)::RuntimeJob
+    results(job_id, account=nothing; refresh=false)
 
 Return results for `job_id`.
+
+See [`job`](@ref)
 """
-function results(job_id, _account=nothing; refresh=false)
-    account = isnothing(_account) ? Accounts.QuantumAccount() : _account
+function results(job_id, account=nothing; refresh=false)
     results_response = Requests.results(job_id, account; refresh)
-    Decode.decode(results_response)
+    res = Decode.decode(results_response; job_id)
+
+    # FIXME: Integrate this decoding into the `decode` methods.
+    # If res is a Dict, we only recognize length of 2.
+    if isa(res, Dict)
+        length(res) == 2 &&
+            return PrimitiveResults.PlainResult(res[:results], res[:metadata], job_id)
+        # We don't know the structure of the `Dict`, so we just add the job id.
+        @show job_id
+        res[:job_id] = job_id
+    end
+
+    res
 end
 
+# FIXME: Results are now stored in the `RuntimeJob` struct. This function still
+# works. But how it works should be changed.
 """
-    results(job::RuntimeJob)
+    results(job::RuntimeJob, account=nothing; refresh=false)
 
 Return results associated with `job`.
+
+Results already contained in `job` are returned if it makes sense to do so.
+
+More precisely, if `job.results` is not `nothing` and `refresh` is `false`, then `job.results` is
+returned. If `job.results` is `nothing` then results are fetched from the cache or the REST API. If
+`refresh` is `false` then the cache is preferred.
 """
-results(job::RuntimeJob) = results(job.job_id)
+function results(job::RuntimeJob, account=nothing; refresh=false)
+    (isnothing(job) || refresh) && return results(job.job_id, account; refresh)
+    job.results
+end
 
 end # module Jobs

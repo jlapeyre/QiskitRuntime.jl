@@ -98,8 +98,7 @@ end
 # Return the fully qualified filename of a cached response.
 # The name is "$id.json".
 function cache_filename(endpoint, id)
-    cache_dir = endpoint_cache_directory(endpoint)
-    joinpath(cache_dir, id * ".json")
+    joinpath(endpoint_cache_directory(endpoint), id * ".json")
 end
 
 # Get the id (say job id) from a filename of the form "$id.json".
@@ -168,8 +167,7 @@ end
 
 # Send a GET request to `endpoint` using `qaccount`.
 # If `qaccount` is `nothing` or is not passed, then create one with `QuantumAccount()`.
-
-function GET_request(endpoint::AbstractString, qaccount::QuantumAccount; kws...)
+function GET_request(endpoint::AbstractString, qaccount::QuantumAccount=QuantumAccount(); kws...)
     url = joinpath(_BASE_REST_URL, endpoint)
     query = _filter_request_queries(kws)
     response = HTTP.get(url, headers(qaccount); query=query)
@@ -180,8 +178,7 @@ function GET_request(endpoint::AbstractString, qaccount::QuantumAccount; kws...)
     # Try to read body. Errors other than 204 are not caught.
     JSON.read(response.body)
 end
-GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint, QuantumAccount(); kws...)
-GET_request(endpoint::AbstractString; kws...) = GET_request(endpoint, QuantumAccount(); kws...)
+GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint; kws...)
 
 ###
 ### Jobs
@@ -360,13 +357,16 @@ end
 
 Return an iterator over all the job ids associated with cached job info.
 
-These are the ids of jobs that were fetched via [`job`](@ref)
-or [`jobs`](@ref).
+These are the ids of jobs that were fetched via [`job`](@ref) or [`jobs`](@ref).
 """
 function cached_job_ids()
     endpoint = "job"
     cache_dir = endpoint_cache_directory(endpoint)
-    filenames = readdir(cache_dir)
+    filenames = if !isdir(cache_dir)
+        String[]
+    else
+        readdir(cache_dir)
+    end
     # SubStrings are returned. We convert them to String
     (String(id_from_json_filename(fname)) for fname in filenames)
 end

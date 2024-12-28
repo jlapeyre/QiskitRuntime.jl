@@ -27,4 +27,31 @@ end
 
 Base.show(io::IO, c::PubEncodedCircuit) = print(io, c)
 
+let
+    function _validate_jobid(job_id::AbstractString)
+        length(job_id) == 20 || error("job id has incorrect length")
+        occursin(r"^[a-z|0-9]+$", job_id) || error("Illegal character in job id")
+        true
+    end
+
+    global JobId
+    struct JobId
+        id::String
+        function JobId(id::String)
+            _validate_jobid(id)
+            new(id)
+        end
+    end
+end
+
+Base.print(io::IO, id::JobId) = print(io, id.id)
+
+# It's not clear to me where these are used
+Base.convert(::Type{String}, id::JobId) = string(id)
+Base.convert(::Type{JobId}, id::AbstractString) = JobId(id)
+
+# For `id * ".json"
+Base.:*(id::JobId, s::String) = string(id) * s
+Base.:*(s::String, id::JobId) = s * string(id)
+
 end # module SomeTypes

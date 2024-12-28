@@ -6,6 +6,8 @@ import ..Requests
 import ..Utils
 import ..Decode
 
+export backends, backend_status
+
 struct BackendProperties
     backend_name::String
     backend_version::VersionNumber
@@ -31,7 +33,6 @@ mutable struct Backend
     properties::BackendProperties
 end
 
-
 function Backend(name::AbstractString)
     props = Requests.backend_properties(name)
     backend_name = props.backend_name
@@ -44,14 +45,16 @@ end
 
 # Several words for one thing: provider == instance = hubgroupproject
 """
-    backends(service=nothing; pending=false, testing=false, instance=nothing)
+    backends(account=nothing; pending=false, testing=false, instance=nothing)
 
-Return a list of available backends. If `pending` is `true`, then return
-a list of tuples `(name, num_pending_jobs)` sorted by `num_pending_jobs`.
-If `testing` is `true` then include test devices; those beginning with `"test_"`.
+Return a list of available backends.
+
+- `pending`: If `true`, return a list of tuples
+   `(name, num_pending_jobs)` sorted by `num_pending_jobs`.
+- `testing`: If `true` include test devices, those that begin with `"test_"`.
 """
-function backends(service=nothing; pending=false, testing=false, instance=nothing)
-    backend_result = Requests.backends(service; provider=instance)
+function backends(account=nothing; pending=false, testing=false, instance=nothing)
+    backend_result = Requests.backends(account; provider=instance)
     backend_names = collect(backend_result.devices)
     if !testing
         backend_names = filter(!startswith("test_"), backend_names)
@@ -74,8 +77,13 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", bs::BackendStatus) = Utils._show(io, bs)
 
-function backend_status(backend_name::AbstractString, service=nothing)
-    st = Requests.backend_status(backend_name, service)
+"""
+    backend_status(backend_name::AbstractString, account=nothing)
+
+Return status information of `backend_name`.
+"""
+function backend_status(backend_name::AbstractString, account=nothing)
+    st = Requests.backend_status(backend_name, account)
     version = isempty(st.backend_version) ?
         nothing : VersionNumber(st.backend_version)
     BackendStatus(

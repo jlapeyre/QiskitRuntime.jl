@@ -24,7 +24,7 @@ function _show(io::IO, object; field_names=true, newlines=false, indent=0) # pri
             show(io, MIME"text/plain"(), subobj)
         end
         if n != length(fnames)
-            showfunc(", ")
+            showfunc(io, ", ")
         end
         if newlines
             println(io)

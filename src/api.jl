@@ -21,6 +21,8 @@ Reexport.@reexport using ..QiskitRuntime.Jobs
 Reexport.@reexport using ..QiskitRuntime.Decode
 Reexport.@reexport using ..QiskitRuntime.Accounts
 Reexport.@reexport using ..QiskitRuntime.PauliOperators
+Reexport.@reexport using ..QiskitRuntime.Backends
+Reexport.@reexport using ..QiskitRuntime.PrimitiveResults
 
 # Names in Requests and higher layers will conflict. So, we don't import these.
 import ..QiskitRuntime.Requests: Requests

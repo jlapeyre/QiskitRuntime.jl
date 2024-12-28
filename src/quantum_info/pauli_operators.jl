@@ -1,7 +1,7 @@
 module PauliOperators
 
 ###
-### Vendored at 6065fab7 from QuantumClifford.jl. This is vendored it is much faster to
+### Vendored at 6065fab7 from QuantumClifford.jl. This files is much faster to
 ### load than the entire package.  I did not vendor `Tableau`, which is a table of
 ### PauliOperators. I can do that later if we stick with this representation.
 ###
@@ -33,8 +33,7 @@ export @P_str, PauliOperator, embed  # Following are exported in the original ‚ä
 abstract type AbstractOperation end
 abstract type AbstractCliffordOperator <: AbstractOperation end
 
-
-# Disabled because we have not added this
+# Disabled because we have not included these capabilities
 # julia> pauli4 = 1im * pauli3 ‚äó X
 # + XYZX
 # julia> Z*X

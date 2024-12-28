@@ -18,7 +18,7 @@ import ..PauliOperators: PauliOperator
 import JSON3
 
 import ..PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin, Metadata,
-    PubResult, ExecutionSpan, LayerError, PauliLindbladError
+    PubResult, ExecutionSpan, LayerError, LayerNoise, PauliLindbladError
 import ..BitArraysX
 
 # TYPE_MAP is not used at the moment
@@ -106,6 +106,11 @@ decode(str::AbstractString) = str
 function decode(key::Symbol, value)
     if key == :version
         return (key, version_value(value))
+    elseif key == :layer_noise
+        return (key, LayerNoise(value[:unique_mitigated_layers],
+                                value[:unique_mitigated_layers_noise_overhead],
+                                value[:total_mitigated_layers],
+                                value[:noise_overhead]))
     end
     (decode(key), decode(value))
 end
@@ -113,9 +118,8 @@ end
 # Decode is mainly for the REST "results" response.
 # Many, but not all, payloads are a dict with two keys, `__type__` and `__value__`.
 # The content should be predictable.
-function decode(dict::Union{JSON3.Object, Dict})
+function decode(dict::Union{JSON3.Object, Dict}; job_id=nothing)
     # Some things, like Pauli strings don't have the type and value keys.
-    # We don't handle these yet.
     if !is_typed_value(dict)
         return Dict(begin
                         (k, v) = decode(k, v)
@@ -123,14 +127,7 @@ function decode(dict::Union{JSON3.Object, Dict})
                     end
                     for (k, v) in dict)
     end
-    type_key = :__type__
-    class = get(dict, :__class__, nothing)
-    type_key = if isnothing(class)
-        :__type__
-    else
-        :__class__
-    end
-    _type = Symbol(dict[type_key])
+    _type = Symbol(dict[haskey(dict, :__class__) ? :__class__ : :__type__])
     _value = dict[:__value__]
     if _type == :QuantumCircuit
         PubEncodedCircuit{:QuantumCircuit}(_value)
@@ -139,10 +136,9 @@ function decode(dict::Union{JSON3.Object, Dict})
         decode_decompress_deserialize_numpy(_value)
     elseif _type == :PrimitiveResult
         metadata = Metadata(decode(_value.metadata), get_version(_value.metadata))
-        PrimitiveResult(decode(_value.pub_results), metadata)
+        PrimitiveResult(decode(_value.pub_results), metadata, job_id)
     elseif _type == :SamplerPubResult
         decode(SamplerPubResult, _value)
-#        SamplerPubResult(decode(_value.data), decode(_value.metadata))
     elseif _type == :PubResult
         decode(PubResult, _value)
     elseif _type == :DataBin
@@ -156,7 +152,6 @@ function decode(dict::Union{JSON3.Object, Dict})
         decode(_value) # Ignore the name, this will create `Vector{ExecutionSpan}`
     elseif _type == :ExecutionSpan
         decode(ExecutionSpan, _value)
-#         ExecutionSpan(decode(_value.start), decode(_value.stop))
     elseif _type == :BitArray
         # Read the encoded, compressed, serialized numpy data
         array = decode(_value.array)
@@ -171,8 +166,6 @@ function decode(dict::Union{JSON3.Object, Dict})
     else
         # This is an encoded typed value, but we don't recognize it.
         # So we return the default JSON3 encoding
-        #        @show typeof(dict.__value__)
-        # dict.__type__
         @show Symbol(_type)
         Unhandled(Symbol(_type), decode(dict.__value__))
     end

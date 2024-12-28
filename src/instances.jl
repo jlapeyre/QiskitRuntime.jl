@@ -16,6 +16,11 @@ function as_string(instance::Instance, sep="/")
     join(as_tuple(instance), sep)
 end
 
+"""
+    Instance(instance::AbstractString)
+
+Construct an `Instance` from a string of the form `"hub/group/project"`.
+"""
 function Instance(instance::AbstractString)
     (hub, group, project) = split(instance, '/')
     Instance(hub, group, project)

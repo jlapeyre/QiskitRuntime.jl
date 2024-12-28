@@ -45,22 +45,42 @@ function QuantumAccount(channel, instance, url, token;
                              verify, proxies)
 end
 
+# TODO: Allow this to be set by env var? Is there one for the Python impl.?
 function _read_account_config_file_json()
     acct_file = _DEFAULT_ACCOUNT_CONFIG_JSON_FILE
     isfile(acct_file) || return nothing
     accts_string = String(read(acct_file))
-    accts_json = JSON.read(accts_string)
+    accts_json = try
+        JSON.read(accts_string)
+    catch e
+        throw(ErrorException(LazyString("Parse error while reading ", _DEFAULT_ACCOUNT_CONFIG_JSON_FILE,
+                                        "\n", e.msg)))
+    end
     return accts_json
 end
 
+"""
+    QuantumAccount()
+
+Return a structure that contains information necessary for making
+requests to the REST API. This includes an access token and an instance.
+
+This reads `~/.qiskit/qiskit-ibm.json`. Environment variables take precedent.
+The latter has been implemented but is not tested.
+"""
 function QuantumAccount()
     from_env = _get_account_from_env_variables()
     ! isnothing(from_env) && return from_env
-    return _read_account_from_config_file()
+    quantum_account = _read_account_from_config_file()
+    if isnothing(quantum_account)
+        throw(ErrorException(lazy"User configuration file \"$_DEFAULT_ACCOUNT_CONFIG_JSON_FILE\" not found."))
+    end
+    return quantum_account
 end
 
 function _read_account_from_config_file()
     accts_json = _read_account_config_file_json()
+    isnothing(accts_json) && return nothing
     # The only account is default-ibm-quantum.
     # This is dict-like, with a single keydefault-ibm-quantum.
     # We take just the value
@@ -101,10 +121,10 @@ function Base.print(io::IO, id::UserId)
 end
 
 function Base.show(io::IO, id::UserId)
-    print(typeof(id), "(")
+    print(io, typeof(id), "(")
     # `string` will omit highest run of unset bits
     show(io, string(id.id; base=16))
-    print(")")
+    print(io, ")")
 end
 
 end # module Accounts

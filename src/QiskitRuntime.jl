@@ -1,7 +1,7 @@
 """
     module QiskitRuntime
 
-`QiskitRuntime` is a client for the [Qiskit Runtime REST API](https://docs.quantum.ibm.com/api/runtime).
+`QiskitRuntime` is a client for the [Qiskit Runtime REST API](https://docs.quantum.ibm.com/api/runtime) written in the Julia language.
 
 `QiskitRuntime` is analagous to the Python-language client [qiskit-ibm-runtime](https://github.com/Qiskit/qiskit-ibm-runtime).
 
@@ -46,6 +46,8 @@ import Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# include("precompile.jl")
+# Comment this out during development for faster compilation when
+# restarting.
+include("precompile.jl")
 
 end # module QiskitRuntime

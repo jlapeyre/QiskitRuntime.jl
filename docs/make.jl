@@ -19,7 +19,9 @@ makedocs(
     warnonly = true, # Don't fail on a lot of things, like missing doc strings.
     pages = [
         "Introduction" => "index.md",
+        "Tutorial" => "tutorial.md",
         "Requests" => "requests.md",
+        "Development notes" => "dev_notes.md",
     ],
     # Following disables remote links, which needs a publically accessible URL.
     # You must do this for a private github repo.

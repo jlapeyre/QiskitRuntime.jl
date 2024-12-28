@@ -9,8 +9,17 @@ using PrecompileTools: @setup_workload, @compile_workload
         # all calls in this block will be precompiled, regardless of whether
         # they belong to your package or not (on Julia 1.8 and higher)
         jobids = cached_job_ids()
-        job.(jobids)
-        results.(jobids)
+        jobsall = job.(jobids)
+        resultsall = results.(jobids)
+        io = IOBuffer()
+        for j in jobsall
+            show(io, MIME"text/plain"(), j)
+            string(j)
+        end
+        for r in resultsall
+            show(io, MIME"text/plain"(), r)
+            string(r)
+        end
         nothing
     end
 end

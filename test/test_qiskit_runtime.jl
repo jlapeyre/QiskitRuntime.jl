@@ -16,12 +16,13 @@ end
 end
 
 @testset "SamplerPubResult" begin
-    job_id = "cxd2zbxtpsjg0083m72g"
+    job_id = JobId("cxd2zbxtpsjg0083m72g")
+#    job_id = "cxd2zbxtpsjg0083m72g"
     set_cache_dir_for_test()
     job_result = Requests.results(job_id);
     @test job_result isa JSON3.Object
     @test Decode.is_typed_value(job_result)
-    primitive_result = Decode.decode(job_result)
+    primitive_result = Decode.decode(job_result; job_id)
     @test primitive_result isa PrimitiveResult
     @test primitive_result.pub_results isa Vector{SamplerPubResult}
     @test primitive_result.pub_results[1].data isa DataBin{<:NamedTuple}
