@@ -46,7 +46,6 @@ import Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# Not useful at the moment
-include("precompile.jl")
+# include("precompile.jl")
 
 end # module QiskitRuntime

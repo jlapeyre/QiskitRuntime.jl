@@ -176,19 +176,19 @@ Base.IndexStyle(::Type{<:BitArrayX}) = Base.IndexLinear()
 end
 
 """
-    log2nbits(::Type{T}) where T
+    log2bitsizeof(::Type{T}) where T
 
 Return base-2 log of the number of bits in the representation of the type `T`.
 
-The value is likely only meaningful for primitive types `T`.
-The returned value is compiled constant for each `T`.
+The value is likely only meaningful for primitive types `T`. The returned value is
+compiled constant for each `T`.
 """
-@inline @generated function log2nbits(::Type{T}) where T
+@inline @generated function log2bitsizeof(::Type{T}) where T
     :(Int(log2(bitsizeof($T))))
 end
 
 # Integer-divide l by bitsize of `T`
-@inline _divX(::Type{T}, l) where {T<:Unsigned} =  l >> log2nbits(T)
+@inline _divX(::Type{T}, l) where {T<:Unsigned} =  l >> log2bitsizeof(T)
 
 # Return the value of type `T` with all bits set
 @inline get_msk(::Type{T}) where {T<:Unsigned} = ~T(0)

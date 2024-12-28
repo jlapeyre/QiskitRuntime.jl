@@ -5,42 +5,40 @@ module PauliOperators
 ### load than the entire package.  I did not vendor `Tableau`, which is a table of
 ### PauliOperators. I can do that later if we stick with this representation.
 ###
+# Copyright notice from QuantumClifford.jl
+# MIT License
+#
+# Copyright (c) 2023 Stefan Krastanov
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
 
-export @P_str, PauliOperator  # Following are exported in the original ⊗, I, X, Y, Z,
-
-import LinearAlgebra
-
-# Neccesary stuff copied from elsewhere in QuantumClifford.
-# Predefined constants representing the permitted phases encoded.
-# in the low bits of UInt8.
-const _p  = 0x00
-const _pi = 0x01
-const _m  = 0x02
-const _mi = 0x03
-
-const phasedict = Dict(""=>_p,"+"=>_p,"i"=>_pi,"+i"=>_pi,"-"=>_m,"-i"=>_mi)
-const toletter = Dict((false,false)=>"_",(true,false)=>"X",(false,true)=>"Z",(true,true)=>"Y")
+export @P_str, PauliOperator, embed  # Following are exported in the original ⊗, I, X, Y, Z,
 
 abstract type AbstractOperation end
 abstract type AbstractCliffordOperator <: AbstractOperation end
 
-xz2str(x,z) = join(toletter[e] for e in zip(x,z))
 
-function xz2str_limited(x,z, limit=50)
-    tupl = collect(zip(x,z))
-    n = length(tupl)
-    if (ismissing(limit) || limit >= n)
-        return xz2str(x, z)
-    end
-    padding = limit÷2
-    return join(toletter[tupl[i]] for i in 1:padding) * "⋯" * join(toletter[tupl[i]] for i in (n-padding):n)
-end
-
-
-####
-#### pauli_operator.jl
-####
-
+# Disabled because we have not added this
+# julia> pauli4 = 1im * pauli3 ⊗ X
+# + XYZX
+# julia> Z*X
+# +iY
 
 """
 A multi-qubit Pauli operator (``±\\{1,i\\}\\{I,Z,X,Y\\}^{\\otimes n}``).
@@ -51,12 +49,6 @@ up one through products and tensor products of smaller operators.
 ```jldoctest
 julia> pauli3 = P"-iXYZ"
 -iXYZ
-
-julia> pauli4 = 1im * pauli3 ⊗ X
-+ XYZX
-
-julia> Z*X
-+iY
 ```
 
 We use a typical F(2,2) encoding internally. The X and Z bits are stored
@@ -88,6 +80,105 @@ struct PauliOperator{Tₚ<:AbstractArray{UInt8,0}, Tᵥ<:AbstractVector{<:Unsign
     nqubits::Int
     xz::Tᵥ
 end
+
+nqubits(pauli::PauliOperator) = pauli.nqubits
+
+"""Get a view of the X part of the `UInt` array of packed qubits of a given Pauli operator."""
+function xview(p::PauliOperator)
+    @view p.xz[1:end÷2]
+end
+"""Get a view of the Y part of the `UInt` array of packed qubits of a given Pauli operator."""
+function zview(p::PauliOperator)
+    @view p.xz[end÷2+1:end]
+end
+"""Extract as a new bit array the X part of the `UInt` array of packed qubits of a given Pauli operator."""
+function xbit(p::PauliOperator)
+    one = eltype(p.xz)(1)
+    size = sizeof(eltype(p.xz))*8
+    [(word>>s)&one==one for word in xview(p) for s in 0:size-1][begin:p.nqubits]
+end
+"""Extract as a new bit array the Z part of the `UInt` array of packed qubits of a given Pauli operator."""
+function zbit(p::PauliOperator)
+    one = eltype(p.xz)(1)
+    size = sizeof(eltype(p.xz))*8
+    [(word>>s)&one==one for word in zview(p) for s in 0:size-1][begin:p.nqubits]
+end
+
+module _PauliOperators
+
+import ..PauliOperator, ..xbit, ..zbit
+
+import LinearAlgebra
+
+bitsizeof(::Type{T}) where T = sizeof(T) * 8
+
+"""
+    log2bitsizeof(::Type{T}) where T
+
+Return base-2 log of the number of bits in the representation of the type `T`.
+
+The value is likely only meaningful for primitive types `T`. The returned value is
+compiled constant for each `T`.
+"""
+@inline @generated function log2bitsizeof(::Type{T}) where T
+    :(Int(log2(bitsizeof($T))))
+end
+
+@inline _mask(::T) where T<:Unsigned = sizeof(T)*8-1
+@inline _mask(::Type{T}) where T<:Unsigned = sizeof(T)*8-1
+@inline _div(T,l) = l >> log2bitsizeof(T)
+@inline _mod(T,l) = l & _mask(T)
+
+"""
+get_bitmask_idxs(xzs::AbstractArray{<:Unsigned}, i::Int)
+
+Computes bitmask indices for an unsigned integer at index `i`
+within the binary structure of a `Tableau` or `PauliOperator`.
+
+For `Tableau`, the method operates on the `.xzs` field, while
+for `PauliOperator`, it uses the `.xz` field. It calculates
+the following values based on the index `i`:
+
+- `lowbit`, the lowest bit.
+- `ibig`, the index of the word containing the bit.
+- `ismall`, the position of the bit within the word.
+- `ismallm`, a bitmask isolating the specified bit.
+"""
+@inline function get_bitmask_idxs(xzs::AbstractArray{<:Unsigned}, i::Int)
+    T = eltype(xzs)
+    lowbit = T(1)
+    ibig = _div(T, i-1) + 1
+    ismall = _mod(T, i-1)
+    ismallm = lowbit << ismall
+    return lowbit, ibig, ismall, ismallm
+end
+
+# Neccesary stuff copied from elsewhere in QuantumClifford.
+# Predefined constants representing the permitted phases encoded.
+# in the low bits of UInt8.
+const _p  = 0x00
+const _pi = 0x01
+const _m  = 0x02
+const _mi = 0x03
+
+const phasedict = Dict(""=>_p,"+"=>_p,"i"=>_pi,"+i"=>_pi,"-"=>_m,"-i"=>_mi)
+const toletter = Dict((false,false)=>"_",(true,false)=>"X",(false,true)=>"Z",(true,true)=>"Y")
+
+xz2str(x,z) = join(toletter[e] for e in zip(x,z))
+
+function xz2str_limited(x,z, limit=50)
+    tupl = collect(zip(x,z))
+    n = length(tupl)
+    if (ismissing(limit) || limit >= n)
+        return xz2str(x, z)
+    end
+    padding = limit÷2
+    return join(toletter[tupl[i]] for i in 1:padding) * "⋯" * join(toletter[tupl[i]] for i in (n-padding):n)
+end
+
+####
+#### pauli_operator.jl
+####
 
 PauliOperator(phase::UInt8, nqubits::Int, xz::Tᵥ) where Tᵥ<:AbstractVector{<:Unsigned} = PauliOperator(fill(UInt8(phase),()), nqubits, xz)
 function PauliOperator(phase::UInt8, x::AbstractVector{Bool}, z::AbstractVector{Bool})
@@ -134,26 +225,6 @@ function Base.show(io::IO, p::PauliOperator)
 end
 ####
 
-"""Get a view of the X part of the `UInt` array of packed qubits of a given Pauli operator."""
-function xview(p::PauliOperator)
-    @view p.xz[1:end÷2]
-end
-"""Get a view of the Y part of the `UInt` array of packed qubits of a given Pauli operator."""
-function zview(p::PauliOperator)
-    @view p.xz[end÷2+1:end]
-end
-"""Extract as a new bit array the X part of the `UInt` array of packed qubits of a given Pauli operator."""
-function xbit(p::PauliOperator)
-    one = eltype(p.xz)(1)
-    size = sizeof(eltype(p.xz))*8
-    [(word>>s)&one==one for word in xview(p) for s in 0:size-1][begin:p.nqubits]
-end
-"""Extract as a new bit array the Z part of the `UInt` array of packed qubits of a given Pauli operator."""
-function zbit(p::PauliOperator)
-    one = eltype(p.xz)(1)
-    size = sizeof(eltype(p.xz))*8
-    [(word>>s)&one==one for word in zview(p) for s in 0:size-1][begin:p.nqubits]
-end
 
 # TODO: This coulde be more efficient
 function _P_str(a::Union{String,SubString{String}})
@@ -162,9 +233,6 @@ function _P_str(a::Union{String,SubString{String}})
     PauliOperator(phase, [l=='X'||l=='Y' for l in letters], [l=='Z'||l=='Y' for l in letters])
 end
 
-macro P_str(a)
-    quote _P_str($a) end
-end
 
 function Base.getindex(p::PauliOperator{Tₚ,Tᵥ}, i::Int) where {Tₚ, Tᵥₑ<:Unsigned, Tᵥ<:AbstractVector{Tᵥₑ}}
     _, ibig, _, ismallm = get_bitmask_idxs(p.xz,i)
@@ -226,6 +294,15 @@ Base.zero(p::P) where {P<:PauliOperator} = zero(P, nqubits(p))
     fill!(p.xz, zero(Tᵥₑ))
     p.phase[] = 0x0
     p
+end
+
+
+end # module _PauliOperators
+
+import ._PauliOperators: _P_str
+
+macro P_str(a)
+    quote _P_str($a) end
 end
 
 """
