@@ -22,6 +22,17 @@ end
     Instance(instance::AbstractString)
 
 Construct an `Instance` from a string of the form `"hub/group/project"`.
+
+```jldoctest
+julia> inst = Instance("a_hub/a_group/a_project")
+Instance(a_hub/a_group/a_project)
+
+julia> inst.project
+"a_project"
+
+julia> Instance("a_hub/a_group/a_project/")
+ERROR: ArgumentError: Expecting three parts separated by '/'. Got 4 parts
+```
 """
 function Instance(instance::AbstractString)
     parts = split(instance, '/')

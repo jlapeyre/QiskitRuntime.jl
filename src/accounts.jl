@@ -166,6 +166,9 @@ QuantumAccount{Nothing}(
   verify = false,
   proxies = nothing
 )
+
+julia> foreach(k -> delete!(ENV, k), ("QISKIT_IBM_INSTANCE", "QISKIT_IBM_TOKEN", "QISKIT_ACCOUNT_NAME"));
+
 ```
 """
 function QuantumAccount(name=nothing;list=false)
