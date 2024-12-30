@@ -84,7 +84,7 @@ function cache_directory()
     let env_cache_dir = get_env(:QISKIT_RUNTIME_CACHE_DIR)
         isnothing(env_cache_dir) || return env_cache_dir
     end
-    return joinpath(Accounts._DEFAULT_QISKIT_USER_DIR, "runtime_cache")
+    return Accounts._Accounts._get_path_in_config("runtime_cache")
 end
 
 """
@@ -116,9 +116,19 @@ function read_response_cache(endpoint, id)
     JSON.read_from_file(cache_file)
 end
 
+# headers for GET
 function headers(qaccount::QuantumAccount)
-    token = qaccount.token
+    token = string(qaccount.token)
     Dict("Accept" => "application/json",
+         "Authorization" => "Bearer $token")
+end
+
+# headers for POST
+# We might be able to use the same headers. Need to experiment
+function headers_post(qaccount::QuantumAccount)
+    token = string(qaccount.token)
+    Dict("Accept" => "application/json",
+         "Content-Type" => "application/json",
          "Authorization" => "Bearer $token")
 end
 

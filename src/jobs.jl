@@ -10,7 +10,46 @@ import ..Ids: JobId, UserId
 
 @enum JobStatus Queued Running Done Error Cancelled
 
+let dict = Dict(
+    :Queued => Queued,
+    :Running => Running,
+    :Completed => Done,
+    :Failed => Error,
+    :Cancelled => Cancelled
+    )
+
+    idict = Dict(v => k for (k,v) in dict)
+
+    function Base.convert(::Type{JobStatus}, api_status::Union{Symbol, AbstractString})
+        return dict[Symbol(api_status)]
+    end
+
+    function Base.convert(::Type{String}, status::JobStatus)
+        return string(idict[status])
+    end
+end
+
+
+# TODO: We should use one of the Enum derivatives in a package
+# They have better features.
 @enum PrimitiveType Estimator Sampler
+
+# The conversions here respect the requirements of the REST API: "sampler" and "estimator"
+
+function Base.convert(::Type{PrimitiveType}, str::AbstractString)
+    str == "estimator" && return Estimator
+    str == "sampler" && return Sampler
+    throw(ArgumentError(lazy"Can't convert $(typeof(str)) \"$str\" to `PrimitiveType`"))
+end
+
+function Base.convert(::Type{String}, primitive::PrimitiveType)
+    primitive == Sampler && return "sampler"
+    primitive == Estimator && return "estimator"
+end
+
+function Base.string(primitive::PrimitiveType)
+    convert(String, primitive)
+end
 
 # We need to do something better with options and pubs
 struct JobParams{PT}
@@ -93,25 +132,25 @@ import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobPa
     ..Sampler, ..Estimator, ..RuntimeJob, ..PrimitiveType, ..SamplerPub, ..EstimatorPub
 
 # Precompile and hide data in let block for _api_to_job_status
-let dict = Dict(
-    :Queued => Queued,
-    :Running => Running,
-    :Completed => Done,
-    :Failed => Error,
-    :Cancelled => Cancelled
-    )
+# let dict = Dict(
+#     :Queued => Queued,
+#     :Running => Running,
+#     :Completed => Done,
+#     :Failed => Error,
+#     :Cancelled => Cancelled
+#     )
 
-    global _api_to_job_status
-    function _api_to_job_status(api_status)
-        return dict[Symbol(api_status)]
-    end
-end
+#     global _api_to_job_status
+#     function _api_to_job_status(api_status)
+#         return dict[Symbol(api_status)]
+#     end
+# end
 
-function _api_to_primitive_type(api_primitive)
-    api_primitive == "estimator" && return Estimator
-    api_primitive == "sampler" && return Sampler
-    throw(ValueError(lazy"Unknown primitive type \"$api_primitive\""))
-end
+# function _api_to_primitive_type(api_primitive)
+#     api_primitive == "estimator" && return Estimator
+#     api_primitive == "sampler" && return Sampler
+#     throw(ValueError(lazy"Unknown primitive type \"$api_primitive\""))
+# end
 
 function _decode_pub_sampler(pub)
     npub = [ begin
@@ -167,7 +206,7 @@ function _make_job(response, results=nothing; params::Bool=true)
     tags = response.tags
     tags = isnothing(tags) ? String[] : collect(tags)
 
-    primitive_id = _api_to_primitive_type(response.program.id)
+    primitive_id = convert(PrimitiveType, response.program.id)
 
     # `copy` converts JSON3 efficienct struction into plain old types.
     # This is a bit wasteful. We should pass JSON3 first
@@ -183,8 +222,9 @@ function _make_job(response, results=nothing; params::Bool=true)
         Decode.parse_response_maybe_datetime(response.ended), # end date
         instance, # instance
         # We only keep one of the following
-#        _api_to_job_status(response.state.status), # state
-        _api_to_job_status(response.status), # status
+        #        _api_to_job_status(response.state.status), # state
+        convert(JobStatus, response.status), # status
+#        _api_to_job_status(response.status), # status
         response.cost, # cost
         response.private, # private
         tags, # tags

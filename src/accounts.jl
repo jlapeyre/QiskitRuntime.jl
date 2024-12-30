@@ -1,25 +1,9 @@
 module Accounts
 
-export QuantumAccount
-
-import ..JSON
-import ..Instances
-import ..Utils
 import ..Ids: Token
-import ..EnvVars: get_env
+import ..Instances
 
-# We copy the names from the Python client, for the  most part.
-# But we add some, omit some, and modify some (!)
-const _DEFAULT_QISKIT_USER_DIR =  joinpath(homedir(), ".qiskit")
-const _DEFAULT_CONFIG_FILENAME = "qiskit-ibm.json"
-const _DEFAULT_ACCOUNT_CONFIG_JSON_FILE = joinpath(_DEFAULT_QISKIT_USER_DIR, _DEFAULT_CONFIG_FILENAME)
-const _DEFAULT_ACCOUNT_NAME = "default"
-const _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
-const _DEFAULT_ACCOUNT_NAME_IBM_CLOUD = "default-ibm-cloud"
-const _DEFAULT_CHANNEL_TYPE = "ibm_cloud"
-const _IBM_QUANTUM_CHANNEL = "ibm_quantum"
-const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
-const _DEFAULT_QISKIT_IBM_AUTH_URL = "https://auth.quantum-computing.ibm.com/api"
+export QuantumAccount
 
 # Note that Python version essentially hardcodes channel == "ibm_quantum".
 # We leave this variable at present.
@@ -38,6 +22,30 @@ struct QuantumAccount{PT}
     proxies::PT
 end
 
+module _Accounts
+
+import ...JSON
+import ...Instances
+import ...Utils
+import ...Ids: Token
+import ...EnvVars: get_env
+
+import ..QuantumAccount
+
+# We copy the names from the Python client, for the  most part.
+# But we add some, omit some, and modify some (!)
+const _DEFAULT_QISKIT_USER_DIR =  joinpath(homedir(), ".qiskit")
+const _DEFAULT_CONFIG_FILENAME = "qiskit-ibm.json"
+const _DEFAULT_ACCOUNT_CONFIG_JSON_FILE = joinpath(_DEFAULT_QISKIT_USER_DIR, _DEFAULT_CONFIG_FILENAME)
+const _DEFAULT_ACCOUNT_NAME = "default"
+const _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
+const _DEFAULT_ACCOUNT_NAME_IBM_CLOUD = "default-ibm-cloud"
+const _DEFAULT_CHANNEL_TYPE = "ibm_cloud"
+const _IBM_QUANTUM_CHANNEL = "ibm_quantum"
+const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
+const _DEFAULT_QISKIT_IBM_AUTH_URL = "https://auth.quantum-computing.ibm.com/api"
+
+
 Base.show(io::IO, ::MIME"text/plain", account::QuantumAccount) =
     Utils._show(io, account; newlines=true)
 
@@ -52,8 +60,14 @@ function QuantumAccount(channel, instance, url, token;
 end
 
 function _get_config_path_json()
+    _get_path_in_config(_DEFAULT_CONFIG_FILENAME)
+    # config_dir = get_env(:QISKIT_CONFIG_DIR, _DEFAULT_QISKIT_USER_DIR)
+    # joinpath(config_dir, _DEFAULT_CONFIG_FILENAME)
+end
+
+function _get_path_in_config(components...)
     config_dir = get_env(:QISKIT_CONFIG_DIR, _DEFAULT_QISKIT_USER_DIR)
-    joinpath(config_dir, _DEFAULT_CONFIG_FILENAME)
+    joinpath(config_dir, components...)
 end
 
 # TODO: Allow this to be set by env var? Is there one for the Python impl.?
@@ -69,6 +83,39 @@ function _read_account_config_file_json()
     end
     return accts_json
 end
+
+function _get_account_name(name)
+    !isnothing(name) && return name
+    name = get_env(:QISKIT_ACCOUNT_NAME)
+    isnothing(name) && (name = _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM)
+    return name
+end
+
+function _read_account_from_config_file(name=nothing)
+    accts_json = _read_account_config_file_json()
+    isnothing(accts_json) && return nothing
+    name = _get_account_name(name)
+    account = get(accts_json, name, nothing)
+    isnothing(account) && throw(ErrorException(lazy"Account \"$name\" not found"))
+    return QuantumAccount(account.channel, account.instance, account.url, Token(account.token);
+                   private_endpoint=account.private_endpoint)
+end
+
+# instance and token must both be present
+function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
+    instance = get_env(:QISKIT_IBM_INSTANCE)
+    isnothing(instance) && return nothing
+    token = get_env(:QISKIT_IBM_TOKEN)
+    isnothing(token) && return nothing
+    channel = get_env(:QISKIT_IBM_CHANNEL, _IBM_QUANTUM_CHANNEL)
+    url = get_env(:QISKIT_IBM_AUTH_URL, _DEFAULT_QISKIT_IBM_AUTH_URL)
+    return QuantumAccount(channel, instance, url, token)
+end
+
+end # module _Accounts
+
+import ._Accounts: _read_account_config_file_json, _get_account_from_env_variables,
+    _read_account_from_config_file
 
 """
     QuantumAccount(name=nothing ;list=false)::QuantumAccount
@@ -188,32 +235,5 @@ function QuantumAccount(name=nothing;list=false)
     return quantum_account
 end
 
-function _get_account_name(name)
-    !isnothing(name) && return name
-    name = get_env(:QISKIT_ACCOUNT_NAME)
-    isnothing(name) && (name = _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM)
-    return name
-end
-
-function _read_account_from_config_file(name=nothing)
-    accts_json = _read_account_config_file_json()
-    isnothing(accts_json) && return nothing
-    name = _get_account_name(name)
-    account = get(accts_json, name, nothing)
-    isnothing(account) && throw(ErrorException(lazy"Account \"$name\" not found"))
-    return QuantumAccount(account.channel, account.instance, account.url, Token(account.token);
-                   private_endpoint=account.private_endpoint)
-end
-
-# instance and token must both be present
-function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
-    instance = get_env(:QISKIT_IBM_INSTANCE)
-    isnothing(instance) && return nothing
-    token = get_env(:QISKIT_IBM_TOKEN)
-    isnothing(token) && return nothing
-    channel = get_env(:QISKIT_IBM_CHANNEL, _IBM_QUANTUM_CHANNEL)
-    url = get_env(:QISKIT_IBM_AUTH_URL, _DEFAULT_QISKIT_IBM_AUTH_URL)
-    return QuantumAccount(channel, instance, url, token)
-end
 
 end # module Accounts
