@@ -6,7 +6,7 @@ import Dates
 import ..Utils
 import ..SomeTypes: PubEncodedCircuit
 import ..PauliOperators: PauliOperator
-import ..SomeTypes: JobId
+import ..Ids: JobId
 
 export PrimitiveResult, PlainResult, SamplerPubResult, PubResult, DataBin, Metadata, ExecutionSpan,
     LayerError, PauliLindbladError

@@ -1,7 +1,7 @@
 
 # Set this at runtime so that it is not compiled in.
 function set_cache_dir_for_test()
-    ENV["QISKIT_RUNTIME_CACHE_DIR"] = joinpath(pkgdir(QiskitRuntime), "test", "runtime_cache")
+    ENV["QISKIT_RUNTIME_CACHE_DIR"] = joinpath(pkgdir(QiskitRuntime), "test", ".qiskit", "runtime_cache")
 end
 
 @testset "decoding" begin
@@ -16,8 +16,7 @@ end
 end
 
 @testset "SamplerPubResult" begin
-    job_id = JobId("cxd2zbxtpsjg0083m72g")
-#    job_id = "cxd2zbxtpsjg0083m72g"
+    job_id = JobId("na6gz6njpwihhasjfesi")
     set_cache_dir_for_test()
     job_result = Requests.results(job_id);
     @test job_result isa JSON3.Object

@@ -1,5 +1,7 @@
 module Instances
 
+export Instance
+
 struct Instance
     hub::String
     group::String
@@ -22,7 +24,10 @@ end
 Construct an `Instance` from a string of the form `"hub/group/project"`.
 """
 function Instance(instance::AbstractString)
-    (hub, group, project) = split(instance, '/')
+    parts = split(instance, '/')
+    length(parts) == 3 || throw(ArgumentError(
+        lazy"Expecting three parts separated by '/'. Got $(length(parts)) parts"))
+    (hub, group, project) = parts
     Instance(hub, group, project)
 end
 

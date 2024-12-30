@@ -3,11 +3,10 @@ module Jobs
 using Dates: DateTime
 import Base: Generator
 import ..Instances: Instance
-import ..Accounts: UserId
 import ..Utils
 import ..Decode
 import ..PrimitiveResults
-import ..SomeTypes: JobId
+import ..Ids: JobId, UserId
 
 @enum JobStatus Queued Running Done Error Cancelled
 
@@ -86,10 +85,9 @@ using Dates: DateTime
 import ...Utils
 import ...Decode
 import ...Instances: Instance
-import ...Accounts: UserId
 import ...Requests
 import ...PauliOperators: PauliOperator
-import ...SomeTypes: JobId
+import ...Ids: JobId, UserId
 
 import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
     ..Sampler, ..Estimator, ..RuntimeJob, ..PrimitiveType, ..SamplerPub, ..EstimatorPub

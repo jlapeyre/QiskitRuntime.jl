@@ -25,6 +25,7 @@ The following environment variables override defaults.
 """
 module QiskitRuntime
 
+include("ids.jl")
 # Vendored at 6065fab7 from QuantumClifford.jl
 include("quantum_info/pauli_operators.jl")
 include("npz2.jl")

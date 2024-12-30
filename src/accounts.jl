@@ -5,6 +5,7 @@ export QuantumAccount
 import ..JSON
 import ..Instances
 import ..Utils
+import ..Ids: Token
 
 const _DEFAULT_QISKIT_USER_DIR =  joinpath(homedir(), ".qiskit")
 const _DEFAULT_ACCOUNT_CONFIG_JSON_FILE = joinpath(_DEFAULT_QISKIT_USER_DIR, "qiskit-ibm.json")
@@ -25,7 +26,7 @@ const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
 struct QuantumAccount{PT}
     channel::String
     url::String
-    token::String
+    token::Token
     instance::Instances.Instance
     private_endpoint::Bool
     verify::Bool
@@ -85,7 +86,7 @@ function _read_account_from_config_file()
     # This is dict-like, with a single keydefault-ibm-quantum.
     # We take just the value
     account = accts_json[_DEFAULT_ACCOUNT_NAME_IBM_QUANTUM]
-    return QuantumAccount(account.channel, account.instance, account.url, account.token;
+    return QuantumAccount(account.channel, account.instance, account.url, Token(account.token);
                    private_endpoint=account.private_endpoint)
 end
 
@@ -95,36 +96,6 @@ function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
     token = get(ENV, "QISKIT_IBM_TOKEN", false) || return nothing
     url = get(ENV, "QISKIT_IBM_URL", false) || return nothing
     return QuantumAccount(channel, instance, url, token)
-end
-
-# I have not seen a schema, so I am guessing based on a few inputs.
-# Input strings are 24 hex "digits". This is 24 * 4 == 96 bits
-# This can be stored in a UInt128.
-struct UserId
-    id::UInt128
-end
-
-const _USER_ID_LENGTH = 24
-
-"""
-    UserId(id_str::AbstractString)
-
-Construct user id from the user id string in REST response.
-"""
-function UserId(id_str::AbstractString)
-    length(id_str) == _USER_ID_LENGTH || error("Incorrect user id string length")
-    UserId(parse(UInt128, "0x" * id_str))
-end
-
-function Base.print(io::IO, id::UserId)
-    print(io, string(id.id; base=16, pad=_USER_ID_LENGTH))
-end
-
-function Base.show(io::IO, id::UserId)
-    print(io, typeof(id), "(")
-    # `string` will omit highest run of unset bits
-    show(io, string(id.id; base=16))
-    print(io, ")")
 end
 
 end # module Accounts

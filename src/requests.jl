@@ -266,7 +266,7 @@ meas[1] = measure \$1;
     headers = Dict(
         "Accept" => "application/json",
         "Content-Type" => "application/json",
-        "Authorization" => "Bearer $(qaccount.token)"
+        "Authorization" => "Bearer $(string(qaccount.token))"
     )
     body = JSON.write(Dict(
         "program_id" => "sampler",
@@ -365,7 +365,7 @@ function cached_job_ids()
     filenames = if !isdir(cache_dir)
         String[]
     else
-        readdir(cache_dir)
+        readdir(cache_dir; sort=false)
     end
     # SubStrings are returned. We convert them to String
     (String(id_from_json_filename(fname)) for fname in filenames)
