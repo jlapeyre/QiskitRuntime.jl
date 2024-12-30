@@ -4,7 +4,7 @@ This is not a really tutorial. It's a demonstration of a few things that you can
 
 !!! note
     This tutorial assumes you have valid account info in `~/.qiskit/qiskit-ibm.json`.
-    
+
 !!! note
     I would be surprised if this works for you on the first attempt. This was all developed in
     a particular environment, with a particular subset of the data returned by the REST API.
@@ -52,19 +52,19 @@ be omitted.
 ```julia-repl
 julia> job(jid; results=false, params=false)
 RuntimeJob{Nothing, Nothing}(
-  job_id = JobId("cxp4fhy0v15000804nsg"), 
-  user_id = QiskitRuntime.Accounts.UserId("62dec6f8fe7a5778e04ec678"), 
-  session_id = JobId("cxp4fh64a290008xg4r0"), 
-  primitive_id = Estimator::PrimitiveType = 0, 
-  backend_name = "ibm_brisbane", 
-  creation_date = 2024-12-25T17:58:31.640, 
-  end_date = 2024-12-25T18:12:12.882, 
-  instance = Instance(client-enablement/solutions/demo-testing), 
-  status = Done::JobStatus = 2, 
-  cost = 18000, 
-  private = false, 
-  tags = ["everything", "PEC", "Container Tests"], 
-  params = nothing, 
+  job_id = JobId("cxp4fhy0v15000804nsg"),
+  user_id = QiskitRuntime.Accounts.UserId("XXXXXXXXXXXXXXXXXXXXXXXX"),
+  session_id = JobId("cxp4fh64a290008xg4r0"),
+  primitive_id = Estimator::PrimitiveType = 0,
+  backend_name = "ibm_brisbane",
+  creation_date = 2024-12-25T17:58:31.640,
+  end_date = 2024-12-25T18:12:12.882,
+  instance = Instance(my-hub/my-group/my-project),
+  status = Done::JobStatus = 2,
+  cost = 18000,
+  private = false,
+  tags = ["everything", "PEC", "Container Tests"],
+  params = nothing,
   results = nothing
 )
 ```
