@@ -18,13 +18,15 @@ Furthermore, the focus at the moment is more on retreiving data than on submitti
 The following environment variables override defaults.
 
 - `QISKIT_RUNTIME_CACHE_DIR`: The top-level directory where REST responses are cached.
-- `QISKIT_IBM_URL`: The url used for authentication (*not* for REST endpoints).
+- `QISKIT_IBM_AUTH_URL`: The url used for authentication (*not* for REST endpoints).
+#-  QISKIT_IBM_RUNTIME_API_URL
 - `QISKIT_IBM_CHANNEL`:
 - `QISKIT_IBM_INSTANCE`: In the form "hub/group/project".
 - `QISKIT_IBM_TOKEN`: The authentication token
 """
 module QiskitRuntime
 
+include("env_vars.jl")
 include("ids.jl")
 # Vendored at 6065fab7 from QuantumClifford.jl
 include("quantum_info/pauli_operators.jl")
@@ -49,6 +51,6 @@ Reexport.@reexport using .API
 
 # Comment this out during development for faster compilation when
 # restarting.
-include("precompile.jl")
+# include("precompile.jl")
 
 end # module QiskitRuntime

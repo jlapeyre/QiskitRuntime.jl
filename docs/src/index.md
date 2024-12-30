@@ -30,6 +30,12 @@ Depth = 2
 
 ## Introduction
 
+```@meta
+DocTestSetup = quote
+  ENV["QISKIT_CONFIG_DIR"] = joinpath(pkgdir(QiskitRuntime), "test", ".qiskit")
+end
+```
+
 ```@autodocs
 Modules = [QiskitRuntime]
 ```
@@ -52,10 +58,27 @@ Modules = [QiskitRuntime.Backends]
 Modules = [QiskitRuntime.Accounts]
 ```
 
+```@meta
+DocTestSetup = quote
+    delete!(ENV, "QISKIT_IBM_TOKEN")
+    delete!(ENV, "QISKIT_IBM_INSTANCE")
+end
+```
+
 ## Instances
 
 ```@autodocs
 Modules = [QiskitRuntime.Instances]
+```
+
+```@meta
+DocTestSetup = quote
+    delete!(ENV, "QISKIT_CONFIG_DIR")
+end
+```
+
+```@meta
+DocTestSetup = nothing
 ```
 
 # Index

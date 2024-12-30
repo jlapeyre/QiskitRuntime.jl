@@ -49,6 +49,7 @@ import ...Accounts
 import ...JSON
 import ...QASM: QASMString
 import ...Utils
+import ...EnvVars: get_env
 
 # Hardcoding this allows is to eliminate a struct that carries this with QuantumAccount
 const _BASE_REST_URL = URIs.URI("https://api.quantum-computing.ibm.com/runtime")
@@ -80,7 +81,7 @@ If `QISKIT_RUNTIME_CACHE_DIR` is set, use it.
 Otherwise, use the hard-coded value `"~/.qiskit/runtime_cache"`.
 """
 function cache_directory()
-    let env_cache_dir = get(ENV, "QISKIT_RUNTIME_CACHE_DIR", nothing)
+    let env_cache_dir = get_env(:QISKIT_RUNTIME_CACHE_DIR)
         isnothing(env_cache_dir) || return env_cache_dir
     end
     return joinpath(Accounts._DEFAULT_QISKIT_USER_DIR, "runtime_cache")

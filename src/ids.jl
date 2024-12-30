@@ -123,6 +123,8 @@ Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{Token}) =
 
 Base.string(token::Token) = join((string(x;base=16, pad=16) for x in token.data), "")
 
+Base.convert(::Type{Token}, id::AbstractString) = Token(id)
+
 function Base.tryparse(::Type{Token}, str::AbstractString, parsef::F=tryparse) where {F}
     strparts = Tuple(@view str[(i-1)*16 + 1:i*16] for i in 1:8)
     nums = (parsef(UInt64, part; base=16) for part in strparts)
@@ -131,7 +133,7 @@ function Base.tryparse(::Type{Token}, str::AbstractString, parsef::F=tryparse) w
 end
 
 function Base.parse(::Type{Token}, str::AbstractString)
-    length(str) == 128 || throw(ValueError(lazy"Token must be 128 hex digits"))
+    length(str) == 128 || throw(ArgumentError(lazy"Token must be 128 hex digits"))
     tryparse(Token, str, parse)
 end
 
