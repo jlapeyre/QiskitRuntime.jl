@@ -87,7 +87,11 @@ DocTestSetup = nothing
 Modules = [QiskitRuntime.PUBs]
 ```
 
+## Circuits
 
+```@autodocs
+Modules = [QiskitRuntime.Circuits]
+```
 
 # Index
 ```@index

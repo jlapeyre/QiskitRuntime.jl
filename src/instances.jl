@@ -10,7 +10,8 @@ end
 
 # TODO: There are some tools to do this more generically.
 function as_tuple(instance::Instance)
-    (instance.hub, instance.group, instance.project)
+    (; hub, group, project) = instance
+    (hub, group, project)
 end
 
 # Join the parts of `instance` with separator `sep`.

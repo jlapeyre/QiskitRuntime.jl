@@ -54,6 +54,11 @@ import ...EnvVars: get_env
 # Hardcoding this allows is to eliminate a struct that carries this with QuantumAccount
 const _BASE_REST_URL = URIs.URI("https://api.quantum-computing.ibm.com/runtime")
 
+# Return the entire url for `endpoint`
+function _endpoint_url(endpoint::AbstractString)
+    joinpath(_BASE_REST_URL, endpoint)
+end
+
 # Construct a fully qualified cache filename for a response and write the file
 # - endpoint: The (possibly modified) endpoint name; used as directory name.
 # - response: A JSON3.Object representing the reponse.
@@ -117,7 +122,7 @@ function read_response_cache(endpoint, id)
 end
 
 # headers for GET
-function headers(qaccount::QuantumAccount)
+function headers_get(qaccount::QuantumAccount)
     token = string(qaccount.token)
     Dict("Accept" => "application/json",
          "Authorization" => "Bearer $token")
@@ -179,9 +184,9 @@ end
 # Send a GET request to `endpoint` using `qaccount`.
 # If `qaccount` is `nothing` or is not passed, then create one with `QuantumAccount()`.
 function GET_request(endpoint::AbstractString, qaccount::QuantumAccount=QuantumAccount(); kws...)
-    url = joinpath(_BASE_REST_URL, endpoint)
+    url = _endpoint_url(endpoint)
     query = _filter_request_queries(kws)
-    response = HTTP.get(url, headers(qaccount); query=query)
+    response = HTTP.get(url, headers_get(qaccount); query=query, status_exception=false)
     if response.status == 204
         # Job exists, but has no result. E.g. it is not finished.
         return nothing
@@ -190,6 +195,15 @@ function GET_request(endpoint::AbstractString, qaccount::QuantumAccount=QuantumA
     JSON.read(response.body)
 end
 GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint; kws...)
+
+# FIXME: check status for errors
+function POST_request(endpoint::AbstractString, body, qaccount::QuantumAccount=QuantumAccount())
+    url = _endpoint_url(endpoint)
+    headers = headers_post(qaccount)
+    response = HTTP.post(url; body, headers, status_exception=false)
+    JSON.read(response.body)
+end
+POST_request(endpoint::AbstractString, body, ::Nothing) = POST_request(endpoint, body)
 
 ###
 ### Jobs
@@ -254,7 +268,8 @@ function run_job_test()
     hub = qaccount.instance.hub
     group = qaccount.instance.group
     project = qaccount.instance.project
-    backend_name = "ibm_nazca"
+#    backend_name = "ibm_nazca"
+    backend_name = "ibm_kyiv"
     quantum_program =
         """
 OPENQASM 3.0;
@@ -274,21 +289,24 @@ meas[1] = measure \$1;
 #    "supports_qiskit" => false,
     "version" => 2,
     )
-    headers = Dict(
-        "Accept" => "application/json",
-        "Content-Type" => "application/json",
-        "Authorization" => "Bearer $(string(qaccount.token))"
-    )
-    body = JSON.write(Dict(
+    # headers = Dict(
+    #     "Accept" => "application/json",
+    #     "Content-Type" => "application/json",
+    #     "Authorization" => "Bearer $(string(qaccount.token))"
+    # )
+    headers = headers_post(qaccount)
+    body_dict = Dict(
         "program_id" => "sampler",
         "hub" => hub,
         "group" => group,
         "project" => project,
         "backend" => backend_name,
         "params" => params,
-    ))
-
-    HTTP.post(url; body, headers)
+    )
+    body = JSON.write(body_dict)
+    POST_request("jobs", body)
+#    return (headers, body)
+#    HTTP.post(url; body, headers)
 end
 
 # We do this because small text formatting errors produce errors in the html.
@@ -302,13 +320,16 @@ end # module _Requests
 
 import ...Circuits: QASMString
 import ...Instances
+import ...PUBs
+import ...Accounts
+import ...JSON
 
 import ._Requests: _cache_or_query, _get_job,
-    endpoint_cache_directory, id_from_json_filename, GET_request,
+    endpoint_cache_directory, id_from_json_filename, GET_request, POST_request,
     _get_results, _qaccount_instance, _endpoint,
     _BASE_REST_URL
 
-export job, jobs, job_ids, user_jobs, results,  run_job,
+export job, jobs, job_ids, user_jobs, results, run_job,
     user_instances, user, workloads,
     backends, backend_status, backend_configuration, backend_defaults
 
@@ -509,12 +530,42 @@ function backend_properties(backend_name::AbstractString, qaccount=nothing; upda
     GET_request("backends/$backend_name/properties", qaccount; updated_before)
 end
 
-function run_job(backend_name::AbstractString, qasm_string::QASMString, qaccount=nothing)
-    qaccount = isnothing(qaccount) ? QuantumAccount() : qaccount
-    url = joinpath(_BASE_REST_URL, "jobs")
-    num_shots = 128
-    pubs = [[qasm_string, [], num_shots]]
-    params = Dict("pubs" => pubs, "version" => 2)
+# function _get_run_body(backend_name::AbstractString, pubs, qaccount)
+#     body = Dict{String, Any}()
+#     (hub, group, project) = Instances.as_tuple(qaccount.instance)
+#     body["program_id"] = PUBs.api_primitive_type(pubs)
+#     body["hub"] = hub
+#     body["group"] = group
+#     body["project"] = project
+#     body["backend"] = backend_name
+#     params = Dict(
+#         "pubs" => PUBs.api_data_structure(pubs),
+# # Following may result in error
+# #        "supports_qiskit" => PUBs.supports_qiskit(pubs),
+#         "version" => 2,
+#     )
+#     body["params"] = params
+#     JSON.write(body)
+# end
+
+function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+    qaccount = isnothing(qaccount) ? Accounts.QuantumAccount() : qaccount
+    body = Dict{String, Any}()
+    (hub, group, project) = Instances.as_tuple(qaccount.instance)
+    body["program_id"] = PUBs.api_primitive_type(pubs)
+    body["hub"] = hub
+    body["group"] = group
+    body["project"] = project
+    body["backend"] = backend_name
+    params = Dict(
+        "pubs" => PUBs.api_data_structure(pubs),
+# Following may result in error
+#        "supports_qiskit" => PUBs.supports_qiskit(pubs),
+        "version" => 2,
+    )
+    body["params"] = params
+    body_json = JSON.write(body)
+    POST_request("jobs", body_json, qaccount)
 end
 
 end # module Requests

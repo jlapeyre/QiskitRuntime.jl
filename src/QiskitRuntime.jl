@@ -19,7 +19,6 @@ The following environment variables override defaults.
 
 - `QISKIT_RUNTIME_CACHE_DIR`: The top-level directory where REST responses are cached.
 - `QISKIT_IBM_AUTH_URL`: The url used for authentication (*not* for REST endpoints).
-#-  QISKIT_IBM_RUNTIME_API_URL
 - `QISKIT_IBM_CHANNEL`:
 - `QISKIT_IBM_INSTANCE`: In the form "hub/group/project".
 - `QISKIT_IBM_TOKEN`: The authentication token
@@ -41,6 +40,7 @@ include("json.jl")
 include("pubs.jl")
 include("instances.jl")
 include("accounts.jl")
+include("run_jobs.jl")
 include("requests.jl")
 include("jobs.jl")
 include("backends.jl")

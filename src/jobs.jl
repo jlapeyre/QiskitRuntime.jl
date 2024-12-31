@@ -7,6 +7,8 @@ import ..Utils
 import ..Decode
 import ..PrimitiveResults
 import ..Ids: JobId, UserId
+import ..PUBs: PrimitiveType, EstimatorType, SamplerType
+
 using SumTypes: @sum_type, @cases
 
 
@@ -60,29 +62,6 @@ function Base.convert(::Type{JobStatus}, status::Union{Symbol, AbstractString})
     status == :Cancelled && return Cancelled
 end
 
-@sum_type PrimitiveType begin
-    Estimator
-    Sampler
-end
-
-# The conversions here respect the requirements of the REST API: "sampler" and "estimator"
-function Base.convert(::Type{PrimitiveType}, str::AbstractString)
-    str == "estimator" && return Estimator
-    str == "sampler" && return Sampler
-    throw(ArgumentError(lazy"Can't convert $(typeof(str)) \"$str\" to `PrimitiveType`"))
-end
-
-function Base.convert(::Type{String}, primitive::PrimitiveType)
-    @cases primitive begin
-        Sampler => "sampler"
-        Estimator => "estimator"
-    end
-end
-
-function Base.string(primitive::PrimitiveType)
-    convert(String, primitive)
-end
-
 # We need to do something better with options and pubs
 struct JobParams{PT}
     support_qiskit::Union{Bool, Nothing}
@@ -117,8 +96,7 @@ struct RuntimeJob{ResultT, ParamsT}
     instance::Instance
     # state and status in Python runtime and REST API is quite complicated
     # We simply copy the REST API strings here. But this should be revisted.
-    # The following two seem to always be the same, so we remove one of them.
-#    state::JobStatus
+    state
     status::JobStatus
     cost::Int
     private::Bool
@@ -158,9 +136,12 @@ import ...Instances: Instance
 import ...Requests
 import ...PauliOperators: PauliOperator
 import ...Ids: JobId, UserId
+import ...PUBs: PrimitiveType, SamplerType, EstimatorType
+
+import ..EstimatorPub
 
 import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
-    ..Sampler, ..Estimator, ..RuntimeJob, ..PrimitiveType, ..SamplerPub, ..EstimatorPub
+    ..RuntimeJob
 
 function _decode_pub_sampler(pub)
     npub = [ begin
@@ -174,20 +155,26 @@ end
 
 function _decode_pub_estimator(pub)
     decode = Decode.decode
-    (circuit, observables, parameters, precision) = (pub...,)
+    if length(pub) == 3
+        (circuit, observables, parameters) = (pub...,)
+        precision = nothing
+    else
+        (circuit, observables, parameters, precision) = (pub...,)
+    end
     isnothing(precision) && (precision = 0.0)
     if isa(observables, Dict{Symbol, <:Any})
         observables = Dict(PauliOperator(String(k)) => v for (k,v) in observables)
     else
-        observables = decode(observables)
+        observables = [PauliOperator(op) for op in observables]
+#        observables = decode(observables)
     end
     EstimatorPub(decode(circuit), observables, decode(parameters), precision)
 end
 
 function _decode_pubs(primitive_id, pubs)
-    if primitive_id == Estimator
+    if primitive_id == EstimatorType
         [_decode_pub_estimator(pub) for pub in pubs]
-    elseif primitive_id == Sampler
+    elseif primitive_id == SamplerType
         [_decode_pub_sampler(pub) for pub in pubs]
     else
         throw(ErrorException("Unexpected error")) # should be an assertion or s.t.
@@ -231,8 +218,7 @@ function _make_job(response, results=nothing; params::Bool=true)
         Decode.parse_response_datetime(response.created), # creation_date
         Decode.parse_response_maybe_datetime(response.ended), # end date
         instance, # instance
-        # We only keep one of the following
-        #        _api_to_job_status(response.state.status), # state
+        Decode.decode(response.state),
         convert(JobStatus, response.status), # status
         response.cost, # cost
         response.private, # private
@@ -251,7 +237,7 @@ import ..Instances: Instance
 import ._Jobs: _make_job
 
 export  job, JobId, JobParams, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
-    PrimitiveType, JobStatus
+    PrimitiveType, JobStatus, run_job
 
 """
     job(job_id::JobId, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)::RuntimeJob
@@ -395,6 +381,18 @@ returned. If `job.results` is `nothing` then results are fetched from the cache 
 function results(job::RuntimeJob, account=nothing; refresh=false)
     (isnothing(job) || refresh) && return results(job.job_id, account; refresh)
     job.results
+end
+
+"""
+    run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+
+Run `pubs` on `backend_name`.
+
+Parameters for controlling error mitigation are not yet supported.
+"""
+function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+    response = Requests.run_job(backend_name, pubs, qaccount)
+    JobId(response.id)
 end
 
 end # module Jobs

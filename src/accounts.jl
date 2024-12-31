@@ -3,7 +3,7 @@ module Accounts
 import ..Ids: Token
 import ..Instances
 
-export QuantumAccount
+export QuantumAccount, list_accounts, all_accounts
 
 # Note that Python version essentially hardcodes channel == "ibm_quantum".
 # We leave this variable at present.
@@ -118,7 +118,7 @@ import ._Accounts: _read_account_config_file_json, _get_account_from_env_variabl
     _read_account_from_config_file
 
 """
-    QuantumAccount(name=nothing ;list=false)::QuantumAccount
+    QuantumAccount(name=nothing)::QuantumAccount
 
 Return a `struct` with information for making requests to the REST API.
 
@@ -128,8 +128,6 @@ In these cases, the account will be constructed with the form `QuantumAccount()`
 
 The following are tried in order, and the first to succeed is returned.
 
-- If `list` is `true` then a list of names of accounts is read from the configuration
-  file and returned.
 - If `name` is not `nothing` then the account with this name is read from
   the configuration file.
 - If the account information is specified in enviroment variables `QISKIT_IBM_INSTANCE`
@@ -149,7 +147,7 @@ In case the account is constructed from environment variables, the variables
 
 
 ```jldoctest
-julia> accts = QuantumAccount(;list=true) # List the accounts in the config file.
+julia> accts = list_accounts() # List the accounts in the config file.
 2-element Vector{String}:
  "default-ibm-quantum"
  "qiskit-other"
@@ -218,12 +216,12 @@ julia> foreach(k -> delete!(ENV, k), ("QISKIT_IBM_INSTANCE", "QISKIT_IBM_TOKEN",
 
 ```
 """
-function QuantumAccount(name=nothing;list=false)
-    if list
-        accts_json = _read_account_config_file_json()
-        isnothing(accts_json) && return nothing
-        return string.(keys(accts_json))
-    end
+function QuantumAccount(name=nothing)
+    # if list
+    #     accts_json = _read_account_config_file_json()
+    #     isnothing(accts_json) && return nothing
+    #     return string.(keys(accts_json))
+    # end
     if isnothing(name) # Only prefer env variables if name is nothing
         from_env = _get_account_from_env_variables()
         !isnothing(from_env) && return from_env
@@ -235,5 +233,18 @@ function QuantumAccount(name=nothing;list=false)
     return quantum_account
 end
 
+# - If `list` is `true` then a list of names of accounts is read from the configuration
+#   file and returned.
+function list_accounts()
+    accts_json = _read_account_config_file_json()
+    isnothing(accts_json) && return nothing
+    return string.(keys(accts_json))
+end
+
+function all_accounts()
+    names = list_accounts()
+    isnothing(names) && return nothing
+    [_read_account_from_config_file(name) for name in names]
+end
 
 end # module Accounts

@@ -99,8 +99,13 @@ function version_value(value)
 end
 
 decode(array::JSON3.Array) = map(decode, array)
-decode(x::Number) = x
+
+# FIXME: should only need the method for Number.
+decode(x::Number; job_id=nothing) = x
+decode(x::Integer; kwargs...) = x
+
 decode(str::AbstractString) = str
+decode(v::Vector) = [decode(x) for x in v]
 
 # Value of key modifies decoding
 function decode(key::Symbol, value)
