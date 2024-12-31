@@ -81,6 +81,14 @@ end
 DocTestSetup = nothing
 ```
 
+## PUBs
+
+```@autodocs
+Modules = [QiskitRuntime.PUBs]
+```
+
+
+
 # Index
 ```@index
 ```

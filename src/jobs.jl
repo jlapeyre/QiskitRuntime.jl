@@ -7,35 +7,65 @@ import ..Utils
 import ..Decode
 import ..PrimitiveResults
 import ..Ids: JobId, UserId
+using SumTypes: @sum_type, @cases
 
-@enum JobStatus Queued Running Done Error Cancelled
 
-let dict = Dict(
-    :Queued => Queued,
-    :Running => Running,
-    :Completed => Done,
-    :Failed => Error,
-    :Cancelled => Cancelled
-    )
+"""
+    JobStatus
 
-    idict = Dict(v => k for (k,v) in dict)
-
-    function Base.convert(::Type{JobStatus}, api_status::Union{Symbol, AbstractString})
-        return dict[Symbol(api_status)]
-    end
-
-    function Base.convert(::Type{String}, status::JobStatus)
-        return string(idict[status])
-    end
+Status of a job as reported by a query to the Runtime.
+* `Queued`
+* `Running`
+* `Done`
+* `Error`
+* `Cancelled`
+"""
+@sum_type JobStatus begin
+    Queued
+    Running
+    Done
+    Error
+    Cancelled
 end
 
+    # INITIALIZING = "job is being initialized"
+    # QUEUED = "job is queued"
+    # VALIDATING = "job is being validated"
+    # RUNNING = "job is actively running"
+    # CANCELLED = "job has been cancelled"
+    # DONE = "job has successfully run"
+    # ERROR = "job incurred error"
 
-# TODO: We should use one of the Enum derivatives in a package
-# They have better features.
-@enum PrimitiveType Estimator Sampler
+"job is queued"
+Queued
+
+"job is actively running"
+Running
+
+"job has successfully run"
+Done
+
+"job has been cancelled"
+Cancelled
+
+"job incurred error"
+Error
+
+function Base.convert(::Type{JobStatus}, status::Union{Symbol, AbstractString})
+    status = Symbol(status)
+    status == :Queued && return Queued
+    status == :Running && return Running
+    status == :Completed && return Done
+    status == :Failed && return Error
+    status == :Cancelled && return Cancelled
+end
+
+@sum_type PrimitiveType begin
+    Estimator
+    Sampler
+end
 
 # The conversions here respect the requirements of the REST API: "sampler" and "estimator"
-
 function Base.convert(::Type{PrimitiveType}, str::AbstractString)
     str == "estimator" && return Estimator
     str == "sampler" && return Sampler
@@ -43,8 +73,10 @@ function Base.convert(::Type{PrimitiveType}, str::AbstractString)
 end
 
 function Base.convert(::Type{String}, primitive::PrimitiveType)
-    primitive == Sampler && return "sampler"
-    primitive == Estimator && return "estimator"
+    @cases primitive begin
+        Sampler => "sampler"
+        Estimator => "estimator"
+    end
 end
 
 function Base.string(primitive::PrimitiveType)
@@ -54,7 +86,6 @@ end
 # We need to do something better with options and pubs
 struct JobParams{PT}
     support_qiskit::Union{Bool, Nothing}
-    # Avoid futher headaches with versions. But the endpoint returns an Int, so maybe useless.
     version::VersionNumber
     resilience_level::Union{Int, Nothing} # I think this is deprecated
     options::Union{Dict{Symbol, Any}, Nothing}
@@ -131,27 +162,6 @@ import ...Ids: JobId, UserId
 import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
     ..Sampler, ..Estimator, ..RuntimeJob, ..PrimitiveType, ..SamplerPub, ..EstimatorPub
 
-# Precompile and hide data in let block for _api_to_job_status
-# let dict = Dict(
-#     :Queued => Queued,
-#     :Running => Running,
-#     :Completed => Done,
-#     :Failed => Error,
-#     :Cancelled => Cancelled
-#     )
-
-#     global _api_to_job_status
-#     function _api_to_job_status(api_status)
-#         return dict[Symbol(api_status)]
-#     end
-# end
-
-# function _api_to_primitive_type(api_primitive)
-#     api_primitive == "estimator" && return Estimator
-#     api_primitive == "sampler" && return Sampler
-#     throw(ValueError(lazy"Unknown primitive type \"$api_primitive\""))
-# end
-
 function _decode_pub_sampler(pub)
     npub = [ begin
                 p = isa(p, Dict{Symbol, <:Any}) ? Decode.decode(p) : p
@@ -224,7 +234,6 @@ function _make_job(response, results=nothing; params::Bool=true)
         # We only keep one of the following
         #        _api_to_job_status(response.state.status), # state
         convert(JobStatus, response.status), # status
-#        _api_to_job_status(response.status), # status
         response.cost, # cost
         response.private, # private
         tags, # tags
@@ -235,8 +244,6 @@ end
 
 end # module _Jobs
 
-# `Requests.cached_job_ids` returns what we want in this layer. So we just
-# import it. Alternative would be to wrap it instead.
 import ..Requests: Requests
 import ..Accounts
 import ..Instances: Instance
@@ -244,7 +251,7 @@ import ..Instances: Instance
 import ._Jobs: _make_job
 
 export  job, JobId, JobParams, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
-    PrimitiveType, Estimator, Sampler
+    PrimitiveType, JobStatus
 
 """
     job(job_id::JobId, account=nothing;  params::Bool=true, results::Bool=true, refresh::Bool=false)::RuntimeJob
@@ -374,8 +381,6 @@ function results(job_id, account=nothing; refresh=false)
     res
 end
 
-# FIXME: Results are now stored in the `RuntimeJob` struct. This function still
-# works. But how it works should be changed.
 """
     results(job::RuntimeJob, account=nothing; refresh=false)
 
