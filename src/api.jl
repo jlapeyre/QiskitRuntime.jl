@@ -26,6 +26,7 @@ Reexport.@reexport using ..QiskitRuntime.Backends
 Reexport.@reexport using ..QiskitRuntime.PrimitiveResults
 Reexport.@reexport using ..QiskitRuntime.Instances
 Reexport.@reexport using ..QiskitRuntime.PUBs
+Reexport.@reexport using ..QiskitRuntime.Circuits
 
 # Names in Requests and higher layers will conflict. So, we don't import these.
 import ..QiskitRuntime.Requests: Requests

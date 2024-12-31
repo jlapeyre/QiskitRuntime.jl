@@ -4,7 +4,7 @@ module PrimitiveResults
 
 import Dates
 import ..Utils
-import ..SomeTypes: PubEncodedCircuit
+import ..Circuits: CircuitString
 import ..PauliOperators: PauliOperator
 import ..Ids: JobId
 
@@ -97,7 +97,7 @@ Base.show(io::IO, ::MIME"text/plain", pe::PauliLindbladError) =
     Utils._show(io, pe; newlines=true)
 
 struct LayerError
-    circuit::PubEncodedCircuit
+    circuit::CircuitString
     error::PauliLindbladError
     qubits::Vector{Int}
 end

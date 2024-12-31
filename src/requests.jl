@@ -47,7 +47,7 @@ import URIs
 import ...Accounts: QuantumAccount
 import ...Accounts
 import ...JSON
-import ...QASM: QASMString
+import ...Circuits: QASMString
 import ...Utils
 import ...EnvVars: get_env
 
@@ -300,7 +300,7 @@ end
 
 end # module _Requests
 
-import ...QASM: QASMString
+import ...Circuits: QASMString
 import ...Instances
 
 import ._Requests: _cache_or_query, _get_job,

@@ -13,7 +13,7 @@ using Accessors: @set
 import ..NPZ2 as NPZ
 import Dates
 import Base64
-import ..SomeTypes: PubEncodedCircuit
+import ..Circuits: CircuitString
 import ..PauliOperators: PauliOperator
 import JSON3
 
@@ -130,7 +130,7 @@ function decode(dict::Union{JSON3.Object, Dict}; job_id=nothing)
     _type = Symbol(dict[haskey(dict, :__class__) ? :__class__ : :__type__])
     _value = dict[:__value__]
     if _type == :QuantumCircuit
-        PubEncodedCircuit{:QuantumCircuit}(_value)
+        CircuitString(_value)
     elseif _type == :ndarray
         # Do these three operations to read the stored numpy data.
         decode_decompress_deserialize_numpy(_value)
