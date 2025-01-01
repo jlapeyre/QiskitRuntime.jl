@@ -22,6 +22,31 @@ The following environment variables override defaults.
 - `QISKIT_IBM_CHANNEL`:
 - `QISKIT_IBM_INSTANCE`: In the form "hub/group/project".
 - `QISKIT_IBM_TOKEN`: The authentication token
+
+# Accounts
+
+Many functions, such as `job`, `jobs`, `user` take an optional argument `account`. If
+`account` is omitted, then information will be taken from the user's config file
+`~/.qisit/qiskit-ibm.json`, or environment variables. The environment variables will be
+preferred. See [`Accounts.QuantumAccount`](@ref).
+
+# Layers
+
+There are more or less two layers: An interface to the REST API, and a layer on top that returns data of native and custom
+Julia types.
+
+# Caching
+
+Caching is done at the level of entire REST API responses.
+
+Reponses from several endpoints are cached automatically. They can be updated with `refresh=true`. For example
+`Requests.job(job_id; refresh=true)`.
+
+Functions in the upper layer also take the keyword argument `refresh` and pass it to the `Requests` layer. For example
+`Jobs.job(job_id; refresh=true)`.
+
+Caching is done by dumping the REST responses via JSON3 in `~/.qiskit/runtime_cache/`.
+
 """
 module QiskitRuntime
 
@@ -42,8 +67,8 @@ include("instances.jl")
 include("accounts.jl")
 include("run_jobs.jl")
 include("requests.jl")
-include("jobs.jl")
 include("backends.jl")
+include("jobs.jl")
 
 import Reexport
 include("api.jl")

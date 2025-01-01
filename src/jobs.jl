@@ -233,6 +233,12 @@ end # module _Jobs
 import ..Requests: Requests
 import ..Accounts
 import ..Instances: Instance
+import ..PUBs: AbstractPUB
+
+# Only here to allow non-fully-qualified symbols in docstring links.
+# There should be a better way to do this.
+import ..Backends
+import ..PUBs
 
 import ._Jobs: _make_job
 
@@ -360,7 +366,6 @@ function results(job_id, account=nothing; refresh=false)
         length(res) == 2 &&
             return PrimitiveResults.PlainResult(res[:results], res[:metadata], job_id)
         # We don't know the structure of the `Dict`, so we just add the job id.
-        @show job_id
         res[:job_id] = job_id
     end
 
@@ -384,15 +389,21 @@ function results(job::RuntimeJob, account=nothing; refresh=false)
 end
 
 """
-    run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+    run_job(backend_name::AbstractString, pubs::AbstractVector{<:AbstractPUB}, qaccount=nothing)
 
-Run `pubs` on `backend_name`.
+Run `pubs` on device `backend_name`.
 
 Parameters for controlling error mitigation are not yet supported.
+
+See [`Accounts.QuantumAccount`](@ref), [`PUBs.EstimatorPUB`](@ref),
+[`PUBs.SamplerPUB`](@ref), [`Backends.backends`](@ref).
 """
-function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+function run_job(backend_name::AbstractString, pubs::AbstractVector{<:AbstractPUB}, qaccount=nothing)
     response = Requests.run_job(backend_name, pubs, qaccount)
     JobId(response.id)
 end
+
+# See [`QiskitRuntime.Accounts.QuantumAccount`](@ref), [`QiskitRuntime.PUBs.EstimatorPUB`](@ref),
+# [`QiskitRuntime.PUBs.SamplerPUB`](@ref), [`QiskitRuntime.Backends.backends`](@ref).
 
 end # module Jobs

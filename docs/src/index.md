@@ -22,9 +22,10 @@ end
 
 ## Contents
 
-The contents are jumbled and out of order. Documenter is difficult.
+See also the [Development notes](@ref).
 
 ```@contents
+Pages = ["index.md", "tutorial.md",  "requests.md", "theindex.md"]
 Depth = 2
 ```
 
@@ -91,8 +92,4 @@ Modules = [QiskitRuntime.PUBs]
 
 ```@autodocs
 Modules = [QiskitRuntime.Circuits]
-```
-
-# Index
-```@index
 ```

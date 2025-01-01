@@ -22,6 +22,7 @@ makedocs(
         "Tutorial" => "tutorial.md",
         "Requests" => "requests.md",
         "Development notes" => "dev_notes.md",
+        "Index" => "theindex.md",
     ],
     # Following disables remote links, which needs a publically accessible URL.
     # You must do this for a private github repo.

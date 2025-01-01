@@ -187,11 +187,8 @@ function GET_request(endpoint::AbstractString, qaccount::QuantumAccount=QuantumA
     url = _endpoint_url(endpoint)
     query = _filter_request_queries(kws)
     response = HTTP.get(url, headers_get(qaccount); query=query, status_exception=false)
-    if response.status == 204
-        # Job exists, but has no result. E.g. it is not finished.
-        return nothing
-    end
-    # Try to read body. Errors other than 204 are not caught.
+    response.status == 204 && return nothing  # 204 means ok, but nothing to return
+    response.status != 200 && throw(ErrorException(lazy"Code $(response.status)"))
     JSON.read(response.body)
 end
 GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint; kws...)
@@ -201,6 +198,7 @@ function POST_request(endpoint::AbstractString, body, qaccount::QuantumAccount=Q
     url = _endpoint_url(endpoint)
     headers = headers_post(qaccount)
     response = HTTP.post(url; body, headers, status_exception=false)
+    response.status == 200 || throw(ErrorException(lazy"Code $(response.status)"))
     JSON.read(response.body)
 end
 POST_request(endpoint::AbstractString, body, ::Nothing) = POST_request(endpoint, body)
@@ -530,40 +528,21 @@ function backend_properties(backend_name::AbstractString, qaccount=nothing; upda
     GET_request("backends/$backend_name/properties", qaccount; updated_before)
 end
 
-# function _get_run_body(backend_name::AbstractString, pubs, qaccount)
-#     body = Dict{String, Any}()
-#     (hub, group, project) = Instances.as_tuple(qaccount.instance)
-#     body["program_id"] = PUBs.api_primitive_type(pubs)
-#     body["hub"] = hub
-#     body["group"] = group
-#     body["project"] = project
-#     body["backend"] = backend_name
-#     params = Dict(
-#         "pubs" => PUBs.api_data_structure(pubs),
-# # Following may result in error
-# #        "supports_qiskit" => PUBs.supports_qiskit(pubs),
-#         "version" => 2,
-#     )
-#     body["params"] = params
-#     JSON.write(body)
-# end
-
 function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
     qaccount = isnothing(qaccount) ? Accounts.QuantumAccount() : qaccount
-    body = Dict{String, Any}()
+    body = Dict{Symbol, Any}()
     (hub, group, project) = Instances.as_tuple(qaccount.instance)
-    body["program_id"] = PUBs.api_primitive_type(pubs)
-    body["hub"] = hub
-    body["group"] = group
-    body["project"] = project
-    body["backend"] = backend_name
+    body[:program_id] = PUBs.api_primitive_type(pubs)
+    body[:hub] = hub
+    body[:group] = group
+    body[:project] = project
+    body[:backend] = backend_name
     params = Dict(
-        "pubs" => PUBs.api_data_structure(pubs),
-# Following may result in error
-#        "supports_qiskit" => PUBs.supports_qiskit(pubs),
-        "version" => 2,
+        :pubs => PUBs.api_data_structure(pubs),
+#        "supports_qiskit" => PUBs.supports_qiskit(pubs), # Documented, but unrecognized
+        :version => 2,
     )
-    body["params"] = params
+    body[:params] = params
     body_json = JSON.write(body)
     POST_request("jobs", body_json, qaccount)
 end

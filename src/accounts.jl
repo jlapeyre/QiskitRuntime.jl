@@ -233,15 +233,25 @@ function QuantumAccount(name=nothing)
     return quantum_account
 end
 
-# - If `list` is `true` then a list of names of accounts is read from the configuration
-#   file and returned.
+"""
+    list_accounts() :: Vector{String}
+
+Return a list of all account names from the user's configuration file.
+
+The default configuration file is `~/.qiskit/qiskit-ibm.json`.
+"""
 function list_accounts()
     accts_json = _read_account_config_file_json()
     isnothing(accts_json) && return nothing
     return string.(keys(accts_json))
 end
 
-function all_accounts()
+"""
+    all_accounts() :: Vector{QuantumAccount}
+
+Return a list of all [`QuantumAccount`](@ref)s in the user's configuration file.
+"""
+function all_accounts() :: Vector{QuantumAccount}
     names = list_accounts()
     isnothing(names) && return nothing
     [_read_account_from_config_file(name) for name in names]

@@ -7,6 +7,3 @@ CurrentModule = QiskitRuntime.Requests
 ```@autodocs
 Modules = [Requests]
 ```
-
-```@index
-```

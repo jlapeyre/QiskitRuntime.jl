@@ -1,5 +1,10 @@
 # Development notes
 
+```@contents
+Pages = ["dev_notes.md"]
+Depth = 3
+```
+
 ## Native Julia types
 
 The REST API is Python-centric in a few ways. Numerical data is typically numpy data that
@@ -137,11 +142,7 @@ is an example of a Julia package that uses a [bunch of GH Actions CI tools](http
 * Enforced formatting? This is probably a good idea. I have not yet tried it. There is a newish package, `Runic.jl`, I think
   that is a config-less code formatter.
 
-
-As far as I can tell, there is no syntax that works with Documenter.jl for making comments
-that are not rendered in the final html. There might be some way, but I have discussions online
-with no resolution. This is unfortunate:
-
+```@raw html
 <!--  LocalWords:  centric numpy un eg IXYZ PauliOperator Qiskit's BitArray src QASM3 utf
   LocalWords:  QuantumCircuit IDK Precompile precompile jl qiskit precompilation REPL
   LocalWords:  adhoc Dicts dicts noiselearning VersionNumber BitIntegers UInt1024 10x
@@ -150,3 +151,4 @@ with no resolution. This is unfortunate:
   LocalWords:  LazyString programmatically LightSumTypes performant GH newish config
   LocalWords:  formatter
 -->
+```
