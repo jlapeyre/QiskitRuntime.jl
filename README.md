@@ -11,6 +11,6 @@
 
 ### **This software is not supported at all**. This software is experimental. 
 
-### This software is an incomplete Julia-language front end to the IBM Quantum Platform, via the REST API.
+### This software is an incomplete Julia-language client for the IBM Quantum Platform via the REST API.
 
 ## See the [documentation](https://jlapeyre.github.io/QiskitRuntime.jl/dev)

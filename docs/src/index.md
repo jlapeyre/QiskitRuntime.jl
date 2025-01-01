@@ -25,15 +25,15 @@ end
 See also the [Development notes](@ref).
 
 ```@contents
-Pages = ["index.md", "tutorial.md",  "requests.md", "theindex.md"]
+Pages = ["index.md", "tutorial.md", "accounts.md", "env_vars.md", "requests.md", "ids.md", "theindex.md"]
 Depth = 2
 ```
 
-## Introduction
+# Introduction
 
 ```@meta
 DocTestSetup = quote
-  ENV["QISKIT_CONFIG_DIR"] = joinpath(pkgdir(QiskitRuntime), "test", ".qiskit")
+  set_env!(:QISKIT_USER_DIR, joinpath(pkgdir(QiskitRuntime), "test", ".qiskit"))
 end
 ```
 
@@ -41,32 +41,26 @@ end
 Modules = [QiskitRuntime]
 ```
 
-## Jobs
+# Jobs
 
 ```@autodocs
 Modules = [QiskitRuntime.Jobs]
 ```
 
-## Backends
+# Backends
 
 ```@autodocs
 Modules = [QiskitRuntime.Backends]
 ```
 
-## Accounts
-
-```@autodocs
-Modules = [QiskitRuntime.Accounts]
-```
-
 ```@meta
 DocTestSetup = quote
-    delete!(ENV, "QISKIT_IBM_TOKEN")
-    delete!(ENV, "QISKIT_IBM_INSTANCE")
+    set_env!(:QISKIT_IBM_TOKEN, nothing)
+    set_env!(:QISKIT_IBM_INSTANCE, nothing)
 end
 ```
 
-## Instances
+# Instances
 
 ```@autodocs
 Modules = [QiskitRuntime.Instances]
@@ -82,13 +76,13 @@ end
 DocTestSetup = nothing
 ```
 
-## PUBs
+# PUBs
 
 ```@autodocs
 Modules = [QiskitRuntime.PUBs]
 ```
 
-## Circuits
+# Circuits
 
 ```@autodocs
 Modules = [QiskitRuntime.Circuits]

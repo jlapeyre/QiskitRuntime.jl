@@ -12,26 +12,32 @@ using QiskitRuntime
 Documenter.DocMeta.setdocmeta!(QiskitRuntime, :DocTestSetup, :(using QiskitRuntime); recursive=true)
 
 makedocs(
-    sitename = "QiskitRuntime",
+    sitename = "QiskitRuntime.jl",
     format = Documenter.HTML(),
     modules = [QiskitRuntime, QiskitRuntime.Requests],
     doctest = false, # Don't run tests. We run them when running unit tests instead.
-    warnonly = true, # Don't fail on a lot of things, like missing doc strings.
+    warnonly = [:missing_docs], # Don't fail on a lot of things, like missing doc strings.
+    authors = "John Lapeyre",
     pages = [
         "Introduction" => "index.md",
         "Tutorial" => "tutorial.md",
+        "Accounts" => "accounts.md",
+        "Environment Variables" => "env_vars.md",
         "Requests" => "requests.md",
+        "Id Numbers and Tokens" => "ids.md",
         "Development notes" => "dev_notes.md",
         "Index" => "theindex.md",
     ],
     # Following disables remote links, which needs a publically accessible URL.
     # You must do this for a private github repo.
-    remotes = nothing,
+    # remotes = nothing,
+    # Following prob not neccesary if remotes=nothing not present
+    # repo = Documenter.Remotes.GitHub("jlapeyre", "QiskitRuntime.jl"),
 )
 
 # Documenter can also automatically deploy documentation to gh-pages.
 # See "Hosting Documentation" and deploydocs() in the Documenter manual
 # for more information.
 deploydocs(
-    repo = "https://github.com/jlapeyre/QiskitRuntime.jl.git"
+    repo = "github.com/jlapeyre/QiskitRuntime.jl.git"
 )

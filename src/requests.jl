@@ -40,6 +40,15 @@ it is not difficult to do so.
 """
 module Requests
 
+struct RuntimeServiceException{T} <: Exception
+    status::Int16
+    body::T
+end
+
+function RuntimeServiceException(response)
+    RuntimeServiceException(response.status, JSON.read(response.body))
+end
+
 module _Requests
 
 import HTTP
@@ -50,6 +59,7 @@ import ...JSON
 import ...Circuits: QASMString
 import ...Utils
 import ...EnvVars: get_env
+import ..RuntimeServiceException
 
 # Hardcoding this allows is to eliminate a struct that carries this with QuantumAccount
 const _BASE_REST_URL = URIs.URI("https://api.quantum-computing.ibm.com/runtime")
@@ -188,7 +198,7 @@ function GET_request(endpoint::AbstractString, qaccount::QuantumAccount=QuantumA
     query = _filter_request_queries(kws)
     response = HTTP.get(url, headers_get(qaccount); query=query, status_exception=false)
     response.status == 204 && return nothing  # 204 means ok, but nothing to return
-    response.status != 200 && throw(ErrorException(lazy"Code $(response.status)"))
+    response.status != 200 && throw(RuntimeServiceException(response))
     JSON.read(response.body)
 end
 GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint; kws...)
@@ -198,7 +208,7 @@ function POST_request(endpoint::AbstractString, body, qaccount::QuantumAccount=Q
     url = _endpoint_url(endpoint)
     headers = headers_post(qaccount)
     response = HTTP.post(url; body, headers, status_exception=false)
-    response.status == 200 || throw(ErrorException(lazy"Code $(response.status)"))
+    response.status == 200 || throw(RuntimeServiceException(response))
     JSON.read(response.body)
 end
 POST_request(endpoint::AbstractString, body, ::Nothing) = POST_request(endpoint, body)
@@ -328,7 +338,7 @@ import ._Requests: _cache_or_query, _get_job,
     _BASE_REST_URL
 
 export job, jobs, job_ids, user_jobs, results, run_job,
-    user_instances, user, workloads,
+    user_instances, user_info, workloads,
     backends, backend_status, backend_configuration, backend_defaults
 
 # I don't know how to control Documenter, or the REPL doc systems, as well as I would like
@@ -483,8 +493,13 @@ function user_instances(qaccount=nothing)
     GET_request("instances", qaccount)
 end
 
+# In Julia, it's not really hard to get an unexpected performance hit from anonymous functions.
+# However, benchmarking shows there is no penalty for semantically creating the anon function
+# at runtime.
+# The time for  `Jobs.user_info` to call `Requests.user_info` and then populates types `UserInfo`
+# and four `InstancePlan`s when the response is cachhed is about 15 μs.
 """
-    user(qaccount=nothing)::JSON3.Object
+    user_info(qaccount=nothing; refresh=false)::JSON3.Object
 
 Get the authenticated user.
 
@@ -492,8 +507,9 @@ The reponse includes the user's email and the same information returned by [`use
 
 $(_endpoint("users/me", "users#tags__users__operations__GetUserMeController_getMyUser"))
 """
-function user(qaccount=nothing)
-    GET_request("users/me", qaccount)
+function user_info(qaccount=nothing; refresh=false)
+    _user_info = (_dummy, qaccount) -> GET_request("users/me", qaccount)
+    _cache_or_query("any", "user", _user_info, qaccount; refresh)
 end
 
 """

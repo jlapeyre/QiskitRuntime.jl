@@ -26,8 +26,8 @@ We currently support much of this with conversion to native-Julia types
 * precompile.jl script works by processing cached jobs in your `~/.qiskit` directory. (We cache
   REST responses there, the Python client does not) If you have no cached jobs, then precompilation
   should still succeed, but it will not be of any benefit.
-  
-  
+
+
   This is not a good general solution. If someone installs the package, they will have no cached jobs,
   and so get no benefit.
 

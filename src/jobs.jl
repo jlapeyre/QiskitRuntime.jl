@@ -138,7 +138,7 @@ import ...PauliOperators: PauliOperator
 import ...Ids: JobId, UserId
 import ...PUBs: PrimitiveType, SamplerType, EstimatorType
 
-import ..EstimatorPub
+import ..EstimatorPub, ..SamplerPub
 
 import ..JobStatus, ..Queued, ..Running, ..Done,  ..Error,  ..Cancelled, ..JobParams,
     ..RuntimeJob
@@ -242,7 +242,7 @@ import ..PUBs
 
 import ._Jobs: _make_job
 
-export  job, JobId, JobParams, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user,
+export  job, JobId, JobParams, RuntimeJob, InstancePlan, UserInfo, job_ids, cached_jobs, cached_job_ids, results, user_info,
     PrimitiveType, JobStatus, run_job
 
 """
@@ -330,20 +330,36 @@ struct InstancePlan
     plan::String
 end
 
+Base.show(io::IO, ::MIME"text/plain", obj::InstancePlan) =
+    Utils._show(io, obj; newlines=true)
+
 struct UserInfo
     email::String
     instances::Vector{InstancePlan}
 end
 
+Base.show(io::IO, ::MIME"text/plain", obj::UserInfo) =
+    Utils._show(io, obj; newlines=true)
+
 """
-    user(account=nothing)
+    user_info(account=nothing; refresh=false)::UserInfo
 
 Return information about the user.
 
 Information includes the user's email and a list of available instances.
+
+!!! note
+    The user info returned by the server is determined by the authentication token.
+    Unlike other cached information, we do not key the cache by this information in order
+    to avoid writing the token as plain text. So if you have more than one account, each
+    with an associated token, the cache will not distinguish them. If you switch accounts
+    and tokens, you should pass `refresh=true`.
+
+    If you merely generate and use a new token for a single account, you do not need to
+    refresh the cache.
 """
-function user(account=nothing)
-    _user = Requests.user(account)
+function user_info(account=nothing; refresh=false)
+    _user = Requests.user_info(account; refresh)
     instances = [InstancePlan(Instance(inst.name), inst.plan) for inst in _user.instances]
     UserInfo(_user.email, instances)
 end

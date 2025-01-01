@@ -11,18 +11,6 @@
 
     `QiskitRuntime.jl` is *completely unsupported*. No person or entity is responsible for providing any support to users of this software.
 
-Furthermore, the focus at the moment is more on retreiving data than on submitting workloads.
-
-# Environment variables
-
-The following environment variables override defaults.
-
-- `QISKIT_RUNTIME_CACHE_DIR`: The top-level directory where REST responses are cached.
-- `QISKIT_IBM_AUTH_URL`: The url used for authentication (*not* for REST endpoints).
-- `QISKIT_IBM_CHANNEL`:
-- `QISKIT_IBM_INSTANCE`: In the form "hub/group/project".
-- `QISKIT_IBM_TOKEN`: The authentication token
-
 # Accounts
 
 Many functions, such as `job`, `jobs`, `user` take an optional argument `account`. If
@@ -46,7 +34,6 @@ Functions in the upper layer also take the keyword argument `refresh` and pass i
 `Jobs.job(job_id; refresh=true)`.
 
 Caching is done by dumping the REST responses via JSON3 in `~/.qiskit/runtime_cache/`.
-
 """
 module QiskitRuntime
 
@@ -76,6 +63,6 @@ Reexport.@reexport using .API
 
 # Comment this out during development for faster compilation when
 # restarting.
-# include("precompile.jl")
+include("precompile.jl")
 
 end # module QiskitRuntime
