@@ -61,9 +61,12 @@ using Reexport: Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# Set this environment var to something other than "false"
-# in order to skip precompilation while developing.
-if get(ENV, "QISKIT_RUNTIME_NO_PRECOMPILE", "false") == "false"
+# Precompiling is broken in CI because there is no qiskit user
+# dir with cached files.
+# So we require an env variable to be set in order to test precompiling locally.
+# Later we will enable it in CI and when distributing, using a user dir in
+# the test dir, or something like that.
+if get(ENV, "QISKIT_RUNTIME_PRECOMPILE", 0) == 1
     include("precompile.jl")
 end
 
