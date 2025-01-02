@@ -60,7 +60,10 @@ import Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# Comment this out during development for faster compilation when restarting.
-# include("precompile.jl")
+# Set this environment var to something other than "false"
+# in order to skip precompilation while developing.
+if get(ENV, "QISKIT_RUNTIME_NO_PRECOMPILE", "false") == "false"
+    include("precompile.jl")
+end
 
 end # module QiskitRuntime
