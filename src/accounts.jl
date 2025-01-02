@@ -81,17 +81,19 @@ function _get_path_in_config(components...)
     return joinpath(config_dir, components...)
 end
 
-# TODO: Allow this to be set by env var? Is there one for the Python impl.?
-function _read_account_config_file_json()
+# Read JSON from the default credentials file.
+# Return the name of the default file and the JSON object
+# in a named tuple
+function _read_account_config_file_json() :: NamedTuple
     acct_file = _get_config_path_json()
-    isfile(acct_file) || return nothing
+    isfile(acct_file) || return (filename=acct_file, accts_json=nothing)
     accts_string = String(read(acct_file))
     accts_json = try
         JSON.read(accts_string)
     catch e
         throw(ErrorException(LazyString("Parse error while reading $acct_file", "\n", e.msg)))
     end
-    return accts_json
+    return (filename=acct_file,  accts_json=accts_json)
 end
 
 function _get_account_name(name)
@@ -101,22 +103,24 @@ function _get_account_name(name)
     return name
 end
 
-function _read_account_from_config_file(name=nothing)
-    accts_json = _read_account_config_file_json()
-    isnothing(accts_json) && return nothing
-    name = _get_account_name(name)
-    account = get(accts_json, name, nothing)
-    isnothing(account) && throw(ErrorException(lazy"Account \"$name\" not found"))
-    return QuantumAccount(
+function _read_account_from_config_file(account_name=nothing) :: NamedTuple
+    result = _read_account_config_file_json()
+    isnothing(result.accts_json) && return (filename=result.filename, account=nothing)
+    account_name = _get_account_name(account_name)
+    account = get(result.accts_json, account_name, nothing)
+    isnothing(account) && throw(ErrorException(lazy"Account \"$account_name\" not found in credentials file \"$(result.filename)\""))
+    account = QuantumAccount(
         account.channel,
         account.instance,
         account.url,
         Token(account.token);
         private_endpoint=account.private_endpoint,
     )
+    return (filename=result.filename, account=account)
 end
 
 # instance and token must both be present
+# This makes no reference to a credentials file
 function _get_account_from_env_variables() # ::Union{Nothing, QuantumAccount}
     instance = get_env(:QISKIT_IBM_INSTANCE)
     isnothing(instance) && return nothing
@@ -135,7 +139,7 @@ import ._Accounts:
     _read_account_from_config_file
 
 """
-    QuantumAccount(name=nothing)::QuantumAccount
+    QuantumAccount(account_name=nothing)::QuantumAccount
 
 Return a `struct` with information for making requests to the REST API.
 
@@ -145,7 +149,7 @@ In these cases, the account will be constructed with the form `QuantumAccount()`
 
 The following are tried in order, and the first to succeed is returned.
 
-- If `name` is not `nothing` then the account with this name is read from
+- If `account_name` is not `nothing` then the account with this name is read from
   the credentials file.
 - If the account information is specified in enviroment variables `QISKIT_IBM_INSTANCE`
   and `QISKIT_IBM_TOKEN`, then these are used to construct the `QuantumAccount`. The
@@ -233,16 +237,16 @@ julia> foreach(k -> set_env!(k, nothing), (:QISKIT_IBM_INSTANCE, :QISKIT_IBM_TOK
 
 ```
 """
-function QuantumAccount(name=nothing)
-    if isnothing(name) # Only prefer env variables if name is nothing
-        from_env = _get_account_from_env_variables()
-        !isnothing(from_env) && return from_env
+function QuantumAccount(account_name=nothing)
+    if isnothing(account_name) # Only prefer env variables if name is nothing
+        account_from_env = _get_account_from_env_variables()
+        !isnothing(account_from_env) && return account_from_env
     end
-    quantum_account = _read_account_from_config_file(name)
-    if isnothing(quantum_account)
-        throw(ErrorException(lazy"User credential file \"$name\" not found."))
+    result = _read_account_from_config_file(account_name)
+    if isnothing(result.account)
+        throw(ErrorException(lazy"User credential file \"$(result.filename)\" not found."))
     end
-    return quantum_account
+    return result.account
 end
 
 """
@@ -251,9 +255,9 @@ end
 Return a list of all account names from the user's [credentials file](@ref credentials_file).
 """
 function list_accounts()
-    accts_json = _read_account_config_file_json()
-    isnothing(accts_json) && return nothing
-    return string.(keys(accts_json))
+    result = _read_account_config_file_json()
+    isnothing(result.accts_json) && return nothing
+    return string.(keys(result.accts_json))
 end
 
 """
@@ -262,9 +266,9 @@ end
 Return a list of all [`QuantumAccount`](@ref)s in the user's [credentials file](@ref credentials_file).
 """
 function all_accounts()::Vector{QuantumAccount}
-    names = list_accounts()
-    isnothing(names) && return nothing
-    return [_read_account_from_config_file(name) for name in names]
+    acct_names = list_accounts()
+    isnothing(acct_names) && return nothing
+    return [_read_account_from_config_file(acct_name).account for acct_name in acct_names]
 end
 
 end # module Accounts
