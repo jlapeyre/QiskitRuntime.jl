@@ -71,6 +71,7 @@ struct JobParams{PT}
 end
 
 Base.show(io::IO, ::MIME"text/plain", p::JobParams) = Utils._show(io, p; newlines=true)
+Utils.wantfancyshow(::Type{T}) where {T<:JobParams} = true
 
 function JobParams(dict::Dict)
     pubs = _decode_pubs(dict[:pubs])
@@ -153,6 +154,9 @@ function _decode_pub_sampler(pub)
             p = isa(p, Dict{Symbol,<:Any}) ? Decode.decode(p) : p
         end for p in pub
     ]
+    if length(npub) == 2
+        return SamplerPub(npub..., 0)
+    end
     isnothing(npub[3]) && (npub[3] = 0)
     return SamplerPub(npub...)
 end

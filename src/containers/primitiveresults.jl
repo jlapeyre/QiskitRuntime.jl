@@ -68,6 +68,7 @@ struct PlainResult
 end
 
 Base.show(io::IO, ::MIME"text/plain", pr::PlainResult) = Utils._show(io, pr; newlines=true)
+Utils.wantfancyshow(::Type{T}) where {T<:PlainResult} = true
 
 struct SamplerPubResult
     data

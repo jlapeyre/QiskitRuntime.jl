@@ -7,6 +7,7 @@ export SamplerPUB, EstimatorPUB
 
 using SumTypes: @sum_type, @cases
 import ..Circuits: AbstractCircuitString, QASMString, CircuitString
+import ..Utils: api_data_structure
 
 ## Primitive Unified Blocks (PUB)
 ## https://docs.quantum.ibm.com/guides/primitive-input-output#pubs
@@ -76,7 +77,7 @@ end
 
 # Convert to types that JSON3 knows how to convert to JSON for the REST API.
 function api_data_structure(pub::SamplerPUB)
-    circstr = string(pub._circuit)
+    circstr = api_data_structure(pub._circuit)
     params = isnothing(pub._params) ? [] : pub._params
     if isnothing(pub._num_shots)
         return [circstr, params]
@@ -111,7 +112,7 @@ end
 
 # Convert to types that JSON3 knows how to convert to JSON for the REST API.
 function api_data_structure(pub::EstimatorPUB)
-    circstr = string(pub._circuit)
+    circstr = api_data_structure(pub._circuit)
     params = isnothing(pub._params) ? [] : pub._params
     if pub._precision > 0
         return [circstr, pub._observables, params, pub._precision]

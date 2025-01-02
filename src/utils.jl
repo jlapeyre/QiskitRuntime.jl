@@ -1,5 +1,13 @@
 module Utils
 
+# Convert an object to a data structure that JSON3 will convert
+# to JSON to make a REST API request
+function api_data_structure end
+
+function wantfancyshow(::Type{T}) where {T}
+    return false
+end
+
 # Show object optionally with field_names and newlines between fields.
 function _show(io::IO, object; field_names=true, newlines=false, indent=0) # printfields::Bool=false)
     T = typeof(object)
@@ -21,7 +29,11 @@ function _show(io::IO, object; field_names=true, newlines=false, indent=0) # pri
         if isa(subobj, Array)
             print(io, subobj)
         else
-            show(io, MIME"text/plain"(), subobj)
+            if wantfancyshow(typeof(subobj))
+                _show(io, subobj; field_names, newlines, indent=inner_indent)
+            else
+                show(io, MIME"text/plain"(), subobj)
+            end
         end
         if n != length(fnames)
             if newlines

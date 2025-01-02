@@ -1,5 +1,7 @@
 module Circuits
 
+import ..Utils: api_data_structure
+
 export AbstractCircuitString, CircuitString, QASMString
 
 abstract type AbstractCircuitString end
@@ -22,6 +24,10 @@ The `QuantumCircuit` was serialized as qpy, then compressed with zlib, then base
 """
 struct CircuitString <: AbstractCircuitString
     data::String
+end
+
+function api_data_structure(circ_str::CircuitString)
+    return Dict(:__type__ => "QuantumCircuit", :__value__ => string(circ_str))
 end
 
 # Truncate printing
