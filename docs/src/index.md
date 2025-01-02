@@ -68,7 +68,7 @@ Modules = [QiskitRuntime.Instances]
 
 ```@meta
 DocTestSetup = quote
-    delete!(ENV, "QISKIT_CONFIG_DIR")
+    delete!(ENV, "QISKIT_USER_DIR")
 end
 ```
 

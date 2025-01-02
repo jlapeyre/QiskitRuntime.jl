@@ -139,8 +139,12 @@ Speaking of `Option` types. How about a sum type?  These are often really useful
 * [QuantumClifford.jl](https://github.com/QuantumSavory/QuantumClifford.jl)
 is an example of a Julia package that uses a [bunch of GH Actions CI tools](https://github.com/QuantumSavory/QuantumClifford.jl/tree/master/.github/workflows) to enforce code quality
 
-* Enforced formatting? This is probably a good idea. I have not yet tried it. There is a newish package, `Runic.jl`, I think
-  that is a config-less code formatter.
+* Code formatting. I am trying JuliaFormatter with a custom config. There is a newish package, `Runic.jl`,
+  that is a config-less code formatter. I love the idea and tried it. But it indents submodules. The way the
+  code is organized, almost every module puts almost all code in a submodule. So almost all code starts with
+  a four space indent. With *no* indent, it is really hard to know if you are in the inner or outer module.
+  A different way altogether to make symbols private would be great.
+  But for now, JuliaFormatter with indent submodules disabled.
 
 ```@raw html
 <!--  LocalWords:  centric numpy un eg IXYZ PauliOperator Qiskit's BitArray src QASM3 utf
