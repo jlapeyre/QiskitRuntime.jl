@@ -19,10 +19,10 @@ using JSON3: JSON3
 
 import ..PrimitiveResults:
     PrimitiveResult,
-    SamplerPubResult,
+    SamplerPUBResult,
     DataBin,
     Metadata,
-    PubResult,
+    PUBResult,
     ExecutionSpan,
     LayerError,
     LayerNoise,
@@ -155,9 +155,9 @@ function decode(dict::Union{JSON3.Object,Dict}; job_id=nothing)
         metadata = Metadata(decode(_value.metadata), get_version(_value.metadata))
         PrimitiveResult(decode(_value.pub_results), metadata, job_id)
     elseif _type == :SamplerPubResult
-        decode(SamplerPubResult, _value)
+        decode(SamplerPUBResult, _value)
     elseif _type == :PubResult
-        decode(PubResult, _value)
+        decode(PUBResult, _value)
     elseif _type == :DataBin
         fields = _value.fields
         field_names = Symbol.(keys(fields))

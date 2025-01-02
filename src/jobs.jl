@@ -106,22 +106,22 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", rtj::RuntimeJob) = Utils._show(io, rtj; newlines=true)
 
-struct SamplerPub{CT,PT}
+struct SamplerPUB{CT,PT}
     circuit::CT
     parameters::Vector{PT}
     shots::Int
 end
 
-Base.show(io::IO, ::MIME"text/plain", rtj::SamplerPub) = Utils._show(io, rtj; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", rtj::SamplerPUB) = Utils._show(io, rtj; newlines=true)
 
-struct EstimatorPub{CT,PT,OT}
+struct EstimatorPUB{CT,PT,OT}
     circuit::CT
     observables::OT # ::Vector{OT}
     parameters::PT  # ::Vector{PT}
     precision::Float64
 end
 
-function Base.show(io::IO, ::MIME"text/plain", rtj::EstimatorPub)
+function Base.show(io::IO, ::MIME"text/plain", rtj::EstimatorPUB)
     return Utils._show(io, rtj; newlines=true)
 end
 
@@ -136,8 +136,8 @@ import ...PauliOperators: PauliOperator
 import ...Ids: JobId, UserId
 import ...PUBs: PrimitiveType, SamplerType, EstimatorType
 
-import ..EstimatorPub
-import ..SamplerPub
+import ..EstimatorPUB
+import ..SamplerPUB
 
 import ..JobStatus
 import ..Queued
@@ -155,10 +155,10 @@ function _decode_pub_sampler(pub)
         end for p in pub
     ]
     if length(npub) == 2
-        return SamplerPub(npub..., 0)
+        return SamplerPUB(npub..., 0)
     end
     isnothing(npub[3]) && (npub[3] = 0)
-    return SamplerPub(npub...)
+    return SamplerPUB(npub...)
 end
 
 function _decode_pub_estimator(pub)
@@ -176,7 +176,7 @@ function _decode_pub_estimator(pub)
         observables = [PauliOperator(op) for op in observables]
         #        observables = decode(observables)
     end
-    return EstimatorPub(decode(circuit), observables, decode(parameters), precision)
+    return EstimatorPUB(decode(circuit), observables, decode(parameters), precision)
 end
 
 function _decode_pubs(primitive_id, pubs)

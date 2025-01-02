@@ -10,8 +10,8 @@ import ..Ids: JobId
 
 export PrimitiveResult,
     PlainResult,
-    SamplerPubResult,
-    PubResult,
+    SamplerPUBResult,
+    PUBResult,
     DataBin,
     Metadata,
     ExecutionSpan,
@@ -25,12 +25,12 @@ end
 
 Base.show(io::IO, ::MIME"text/plain", pr::Metadata) = Utils._show(io, pr; newlines=true)
 
-struct PubResult
+struct PUBResult
     data
     metadata
 end
 
-Base.show(io::IO, ::MIME"text/plain", pr::PubResult) = Utils._show(io, pr; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", pr::PUBResult) = Utils._show(io, pr; newlines=true)
 
 """
     struct PrimitiveResult{T}
@@ -38,7 +38,7 @@ Base.show(io::IO, ::MIME"text/plain", pr::PubResult) = Utils._show(io, pr; newli
 This struct contains job results that were tagged with the type `PrimitiveResults`.
 
 `T` is related to the type of [PUBs](https://docs.quantum.ibm.com/guides/primitive-input-output) in
-this container. We currently find values of `PubResult` and `SamplerPubResult`. I think the former
+this container. We currently find values of `PUBResult` and `SamplerPUBResult`. I think the former
 may really be used always and only for EstimatorV2 results. But I am not sure.
 """
 struct PrimitiveResult{T}
@@ -70,12 +70,12 @@ end
 Base.show(io::IO, ::MIME"text/plain", pr::PlainResult) = Utils._show(io, pr; newlines=true)
 Utils.wantfancyshow(::Type{T}) where {T<:PlainResult} = true
 
-struct SamplerPubResult
+struct SamplerPUBResult
     data
     metadata
 end
 
-function Base.show(io::IO, ::MIME"text/plain", r::SamplerPubResult)
+function Base.show(io::IO, ::MIME"text/plain", r::SamplerPUBResult)
     return Utils._show(io, r; newlines=true)
 end
 
@@ -121,7 +121,7 @@ Base.show(io::IO, ::MIME"text/plain", le::LayerNoise) = Utils._show(io, le; newl
 
 # This does not work because some fields have no copy constructor.
 # I don't see an easy way to get this info without an instance of the obj.
-# for T in (PubResult, DataBin, Metadata, ExecutionSpan)
+# for T in (PUBResult, DataBin, Metadata, ExecutionSpan)
 #     fnames = fieldnames(T)
 #     args = Tuple(:(copy(obj.$x)) for x in fnames)
 # #    @eval Base.copy(obj::$T) = $T((copy(getfield(obj, name)) for name in $fnames)...)

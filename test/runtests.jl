@@ -3,7 +3,7 @@ import Dates
 using Test
 import JSON3
 
-using QiskitRuntime.PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin
+using QiskitRuntime.PrimitiveResults: PrimitiveResult, SamplerPUBResult, DataBin
 
 import QiskitRuntime.BitArraysX: BitArrayAlt
 

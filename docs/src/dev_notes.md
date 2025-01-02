@@ -5,6 +5,25 @@ Pages = ["dev_notes.md"]
 Depth = 3
 ```
 
+## Consistency
+
+A foolish inconsistency is the hobgoblin of little minds, adored by little lazy coders.
+
+### Rules specific to this package
+
+* Always "PUB" in types, function names, docs, comments. Never "Pub", "pub", etc.
+  "pubs" is ok as a function parameter name. For example: `process_data(pubs)`.
+* Always "credentials" file. Never "config" or anything else.
+* Always "user qiskit directory". Never "config".
+* The two previous items and similar apply in comments, doc strings, and function names.
+
+### General rules
+
+Better to go to one of the big projects and look at their rules. Maybe just adopt one of them.
+
+* Underscores between words. I have a hard time remembering and applying this. It is also invites
+  discussion. It also goes against long-standing Julia advice (which has also been disagreed with forever)
+
 ## Native Julia types
 
 The REST API is Python-centric in a few ways. Numerical data is typically numpy data that
@@ -126,8 +145,13 @@ Julia doesn't have a strong culture or concepts of best practices for exceptions
 
 Speaking of `Option` types. How about a sum type?  These are often really useful.
 
+I have begun to use `SumTypes`. I am not using `LightSumTypes`.
+
+* [SumTypes.jl](https://github.com/MasonProtter/SumTypes.jl). This seems to have better ergonomics
 * [LightSumTypes.jl](https://github.com/JuliaDynamics/LightSumTypes.jl) is very small (50 lines or so) and very
   performant, but lacks features.
+
+There is also Moshi. It's rather heavy, but maybe a better choice.
 
 ## Code quality and CI
 

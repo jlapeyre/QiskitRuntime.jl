@@ -28,14 +28,14 @@ end
     @test date_obj == Dates.DateTime("2024-12-10T20:12:05.533")
 end
 
-@testset "SamplerPubResult" begin
+@testset "SamplerPUBResult" begin
     job_id = JobId("na6gz6njpwihhasjfesi")
     job_result = Requests.results(job_id);
     @test job_result isa JSON3.Object
     @test Decode.is_typed_value(job_result)
     primitive_result = Decode.decode(job_result; job_id)
     @test primitive_result isa PrimitiveResult
-    @test primitive_result.pub_results isa Vector{SamplerPubResult}
+    @test primitive_result.pub_results isa Vector{SamplerPUBResult}
     @test primitive_result.pub_results[1].data isa DataBin{<:NamedTuple}
     bit_array_alt = primitive_result.pub_results[1].data.fields.meas
     @test bit_array_alt isa BitArrayAlt{UInt8, 2}
