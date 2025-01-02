@@ -282,7 +282,16 @@ function job(
     refresh::Bool=false,
 )
     job_response = Requests.job(job_id, account; refresh)
-    _results = results ? Jobs.results(job_id, account; refresh) : nothing
+    if job_response.status == "Failed"
+        # If status is "Failed" and we try to read results from the server, we won't
+        # resuls. In fact not even a json object. We just get a string containing an
+        # error message. In Requests.GET_request, we choose to throw an error in this
+        # case.
+        # So if status is "Failed", we don't send a request to the results endpoint.
+        _results = nothing
+    else
+        _results = results ? Jobs.results(job_id, account; refresh) : nothing
+    end
     return _make_job(job_response, _results; params)
 end
 job(job_id::AbstractString, _account=nothing; kws...) = job(JobId(job_id), _account; kws...)

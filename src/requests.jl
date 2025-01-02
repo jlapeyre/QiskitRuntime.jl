@@ -9,13 +9,13 @@ A request to an endpoint with a cache works as follows:
 * A function requesting a specific endpoint is called. For example [`job`](@ref).
   In this case, a job id is passed as a parameter.
 * The cached response is looked up by job id. If a cached response is found, it is read, converted to a `JSON3.Object`, and returned.
-* If the cached reponse is not found, a request is
+* If the cached response is not found, a request is
   made to the endpoint. The response string is written to the cache and is also converted to a `JSON3.Object`
   and returned.
 
 If you pass the keyword parameter `refresh=true`, the above scenario is modified.
 In this case, the request is sent to the endpoint unconditionally. The cache file, if present,
-is overwritten with the new reponse.
+is overwritten with the new response.
 
 Some endpoints have no associated cache. A function in the `Requests` layer accessing this endpoint
 simply makes the requests, parses the result, and returns a `JSON3.Object`.
@@ -59,10 +59,17 @@ function RuntimeServiceException(response)
     return RuntimeServiceException(response.status, JSON.read(response.body))
 end
 
+# FIXME: Find a good name for this
+struct JobException{T} <: Exception
+    status::Int16
+    body::T
+end
+
 module _Requests
 
 using HTTP: HTTP
 using URIs: URIs
+using JSON3: JSON3
 import ...Accounts: QuantumAccount
 import ...Accounts
 import ...JSON
@@ -70,6 +77,7 @@ import ...Circuits: QASMString
 import ...Utils
 import ...EnvVars: get_env
 import ..RuntimeServiceException
+import ..JobException
 
 # Hardcoding this allows is to eliminate a struct that carries this with QuantumAccount
 const _BASE_REST_URL = URIs.URI("https://api.quantum-computing.ibm.com/runtime")
@@ -81,7 +89,7 @@ end
 
 # Construct a fully qualified cache filename for a response and write the file
 # - endpoint: The (possibly modified) endpoint name; used as directory name.
-# - response: A JSON3.Object representing the reponse.
+# - response: A JSON3.Object representing the response.
 # - id: A string identifying the request. For example a job id.
 # - cache_dir: The parent dir to the subdir `endpoint`.
 #
@@ -212,9 +220,42 @@ function GET_request(
     url = _endpoint_url(endpoint)
     query = _filter_request_queries(kws)
     response = HTTP.get(url, headers_get(qaccount); query=query, status_exception=false)
-    response.status == 204 && return nothing  # 204 means ok, but nothing to return
-    response.status != 200 && throw(RuntimeServiceException(response))
-    return JSON.read(response.body)
+    (; status, body) = response
+    # Ugh, interpreting the response is a messy exercise in reverse engineering.
+    status == 204 && return nothing  # 204 means ok, but nothing to return
+    if status == 404
+        # The "results" endpoint sometimes sends 404-- not found
+        # The body is indeed JSON. There is a field "message".
+        # If the value is "Job is not terminal" this means the results
+        # are not yet available, so we return `nothing`.
+        # Another way to signal results not yet available is with status code 204
+        # which is caught above.
+        # Maybe the difference is that if we get 404 it means the job is not
+        # finished, but will fail.
+        json = JSON.read(body)
+        if json.errors[1].message == "Job is not terminal"
+            return nothing
+        end
+        throw(RuntimeServiceException(response))
+    end
+    if status == 200
+        # The "results" endpoint sometimes sends 200, i.e. OK, even when the job failed
+        # (Well, it's not not a server error)
+        # The payload is different from all others. It is not JSON.
+        # If we try to read as JSON, we get `1` (the few times I've observed)
+        # We try to read as JSON. If we get an JSON3.Object, then maybe this really is job results.
+        # If we get `1`, then maybe it's not JSON and we simply convert to a string, which
+        # is an error message.
+        # Then we throw an error with this message.
+        json = JSON.read(body)
+        if !isa(json, JSON3.Object)
+            error_str = String(copy(body))
+            throw(JobException(status, error_str))
+        end
+        # Got status 200, and the result is JSON, so we assume it is really job results.
+        return json
+    end
+    throw(RuntimeServiceException(response))
 end
 GET_request(endpoint::AbstractString, ::Nothing; kws...) = GET_request(endpoint; kws...)
 
@@ -543,7 +584,7 @@ end
 
 Get the authenticated user.
 
-The reponse includes the user's email and the same information returned by [`user_instances`](@ref).
+The response includes the user's email and the same information returned by [`user_instances`](@ref).
 
 $(_endpoint("users/me", "users#tags__users__operations__GetUserMeController_getMyUser"))
 """
