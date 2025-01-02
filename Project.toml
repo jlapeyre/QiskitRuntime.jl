@@ -18,12 +18,6 @@ SumTypes = "8e1ec7a9-0e02-4297-b0fe-6433085c89f2"
 TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
 
-[weakdeps]
-PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
-
-[extensions]
-PythonExt = "PythonCall"
-
 [compat]
 Accessors = "0.1.38"
 Aqua = ">= 0"
@@ -35,7 +29,6 @@ HTTP = "1.10.10"
 JSON3 = "1.14.0"
 LinearAlgebra = "1.11.0"
 PrecompileTools = "1.2.1"
-PythonCall = "0.9"
 Random = "1.11.0"
 Reexport = "1.2.2"
 SumTypes = "0.5.8"
