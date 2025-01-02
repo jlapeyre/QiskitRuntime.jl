@@ -1,7 +1,20 @@
-
 # Set this at runtime so that it is not compiled in.
-function set_cache_dir_for_test()
-    ENV["QISKIT_RUNTIME_CACHE_DIR"] = joinpath(pkgdir(QiskitRuntime), "test", ".qiskit", "runtime_cache")
+# function set_cache_dir_for_test()
+#     set_env!(:QISKIT_RUNTIME_CACHE_DIR, joinpath(pkgdir(QiskitRuntime), "test", ".qiskit", "runtime_cache"))
+# end
+
+import Dates
+
+@testset "Failed Job" begin
+    job_id = JobId("dxv3sk6y1ae0008n6zbg")
+    thejob = job(job_id)
+    @test thejob.status == JobStatus'.Error
+    @test thejob.user_id == UserId("ad23bc0732543df64f35cd12")
+    @test isnothing(thejob.results)
+    @test thejob.instance == Instance("the-hub/the-group/the-project")
+    @test isa(thejob.tags, Vector{String})
+    @test isempty(thejob.tags)
+    @test thejob.end_date == Dates.DateTime("2025-01-02T07:14:23.636")
 end
 
 @testset "decoding" begin
@@ -17,7 +30,6 @@ end
 
 @testset "SamplerPubResult" begin
     job_id = JobId("na6gz6njpwihhasjfesi")
-    set_cache_dir_for_test()
     job_result = Requests.results(job_id);
     @test job_result isa JSON3.Object
     @test Decode.is_typed_value(job_result)
