@@ -14,7 +14,7 @@
 # Accounts
 
 Many functions, such as `job`, `jobs`, `user` take an optional argument `account`. If
-`account` is omitted, then information will be taken from the user's config file
+`account` is omitted, then information will be taken from the user's credentials file
 `~/.qisit/qiskit-ibm.json`, or environment variables. The environment variables will be
 preferred. See [`Accounts.QuantumAccount`](@ref).
 

@@ -99,7 +99,7 @@ function cache_directory()
     let env_cache_dir = get_env(:QISKIT_RUNTIME_CACHE_DIR)
         isnothing(env_cache_dir) || return env_cache_dir
     end
-    return Accounts._Accounts._get_path_in_config("runtime_cache")
+    return Accounts._Accounts._get_path_in_qiskit_user_dir("runtime_cache")
 end
 
 """
@@ -163,7 +163,7 @@ end
 # We could create `qaccount` just to extract `instance`.
 # But `qaccount` will be created in a downstream call to `GET_request`.
 # Here we avoid creating it twice.
-# This involves reading the user's config file (or ENV variable, etc.)
+# This involves reading the user's credentials file (or ENV variable, etc.)
 # It takes about 0.5 ms on my machine.
 function _qaccount_instance(qaccount::Union{Nothing,QuantumAccount}, instance)
     qaccount = isnothing(qaccount) ? QuantumAccount() : qaccount

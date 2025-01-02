@@ -5,6 +5,11 @@ import ..Instances
 
 export QuantumAccount, list_accounts, all_accounts
 
+### NOTE!
+## Use terms "credentials file", "qiskit user directory" as consistently as possible.
+## Do not use "config", we have no such thing. This logic is confusing and easy to
+## forget. We need to minimize confusion.
+
 # Note that Python version essentially hardcodes channel == "ibm_quantum".
 # We leave this variable at present.
 # I have know idea what type `proxies` might be. So the type is parameterized
@@ -72,28 +77,28 @@ function QuantumAccount(
     )
 end
 
-function _get_config_path_json()
-    return _get_path_in_config(_DEFAULT_CREDENTIALS_FILENAME)
+function _get_credentials_path_json()
+    return _get_path_in_qiskit_user_dir(_DEFAULT_CREDENTIALS_FILENAME)
 end
 
-function _get_path_in_config(components...)
-    config_dir = get_env(:QISKIT_USER_DIR, _DEFAULT_QISKIT_USER_DIR)
-    return joinpath(config_dir, components...)
+function _get_path_in_qiskit_user_dir(components...)
+    qiskit_user_dir = get_env(:QISKIT_USER_DIR, _DEFAULT_QISKIT_USER_DIR)
+    return joinpath(qiskit_user_dir, components...)
 end
 
 # Read JSON from the default credentials file.
 # Return the name of the default file and the JSON object
 # in a named tuple
-function _read_account_config_file_json() :: NamedTuple
-    acct_file = _get_config_path_json()
-    isfile(acct_file) || return (filename=acct_file, accts_json=nothing)
-    accts_string = String(read(acct_file))
+function _read_credentials_file() :: NamedTuple
+    acct_filename = _get_credentials_path_json()
+    isfile(acct_filename) || return (filename=acct_filename, accts_json=nothing)
+    accts_string = String(read(acct_filename))
     accts_json = try
         JSON.read(accts_string)
     catch e
-        throw(ErrorException(LazyString("Parse error while reading $acct_file", "\n", e.msg)))
+        throw(ErrorException(LazyString("Parse error while reading $acct_filename", "\n", e.msg)))
     end
-    return (filename=acct_file,  accts_json=accts_json)
+    return (filename=acct_filename,  accts_json=accts_json)
 end
 
 function _get_account_name(name)
@@ -103,8 +108,8 @@ function _get_account_name(name)
     return name
 end
 
-function _read_account_from_config_file(account_name=nothing) :: NamedTuple
-    result = _read_account_config_file_json()
+function _read_account_from_credentials_file(account_name=nothing) :: NamedTuple
+    result = _read_credentials_file()
     isnothing(result.accts_json) && return (filename=result.filename, account=nothing)
     account_name = _get_account_name(account_name)
     account = get(result.accts_json, account_name, nothing)
@@ -134,9 +139,9 @@ end
 end # module _Accounts
 
 import ._Accounts:
-    _read_account_config_file_json,
+    _read_credentials_file,
     _get_account_from_env_variables,
-    _read_account_from_config_file
+    _read_account_from_credentials_file
 
 """
     QuantumAccount(account_name=nothing)::QuantumAccount
@@ -168,7 +173,7 @@ In case the account is constructed from environment variables, the variables
 
 
 ```jldoctest
-julia> accts = list_accounts() # List the accounts in the config file.
+julia> accts = list_accounts() # List the accounts in the credentials file.
 2-element Vector{String}:
  "default-ibm-quantum"
  "qiskit-other"
@@ -242,7 +247,7 @@ function QuantumAccount(account_name=nothing)
         account_from_env = _get_account_from_env_variables()
         !isnothing(account_from_env) && return account_from_env
     end
-    result = _read_account_from_config_file(account_name)
+    result = _read_account_from_credentials_file(account_name)
     if isnothing(result.account)
         throw(ErrorException(lazy"User credential file \"$(result.filename)\" not found."))
     end
@@ -255,7 +260,7 @@ end
 Return a list of all account names from the user's [credentials file](@ref credentials_file).
 """
 function list_accounts()
-    result = _read_account_config_file_json()
+    result = _read_credentials_file()
     isnothing(result.accts_json) && return nothing
     return string.(keys(result.accts_json))
 end
@@ -268,7 +273,7 @@ Return a list of all [`QuantumAccount`](@ref)s in the user's [credentials file](
 function all_accounts()::Vector{QuantumAccount}
     acct_names = list_accounts()
     isnothing(acct_names) && return nothing
-    return [_read_account_from_config_file(acct_name).account for acct_name in acct_names]
+    return [_read_account_from_credentials_file(acct_name).account for acct_name in acct_names]
 end
 
 end # module Accounts
