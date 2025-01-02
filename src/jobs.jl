@@ -450,7 +450,4 @@ function run_job(
     return JobId(response.id)
 end
 
-# See [`QiskitRuntime.Accounts.QuantumAccount`](@ref), [`QiskitRuntime.PUBs.EstimatorPUB`](@ref),
-# [`QiskitRuntime.PUBs.SamplerPUB`](@ref), [`QiskitRuntime.Backends.backends`](@ref).
-
 end # module Jobs
