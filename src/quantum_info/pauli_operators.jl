@@ -106,9 +106,9 @@ end
 
 module _PauliOperators
 
-using ..PauliOperator: PauliOperator
-using ..xbit: xbit
-using ..zbit: zbit
+import ..PauliOperator
+import ..xbit
+import ..zbit
 
 using LinearAlgebra: LinearAlgebra
 

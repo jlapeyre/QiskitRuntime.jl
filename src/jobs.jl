@@ -135,17 +135,17 @@ import ...PauliOperators: PauliOperator
 import ...Ids: JobId, UserId
 import ...PUBs: PrimitiveType, SamplerType, EstimatorType
 
-using ..EstimatorPub: EstimatorPub
-using ..SamplerPub: SamplerPub
+import ..EstimatorPub
+import ..SamplerPub
 
-using ..JobStatus: JobStatus
-using ..Queued: Queued
-using ..Running: Running
-using ..Done: Done
-using ..Error: Error
-using ..Cancelled: Cancelled
-using ..JobParams: JobParams
-using ..RuntimeJob: RuntimeJob
+import ..JobStatus
+import ..Queued
+import ..Running
+import ..Done
+import ..Error
+import ..Cancelled
+import ..JobParams
+import ..RuntimeJob
 
 function _decode_pub_sampler(pub)
     npub = [
