@@ -29,7 +29,8 @@ Reexport.@reexport using ..QiskitRuntime.PUBs
 Reexport.@reexport using ..QiskitRuntime.Circuits
 Reexport.@reexport using ..QiskitRuntime.EnvVars
 
-# Names in Requests and higher layers will conflict. So, we don't import these.
-import ..QiskitRuntime.Requests: Requests
-export Requests
+# Names in Requests and higher layers will conflict. So, we don't import most of these.
+# Just a few...
+Reexport.@reexport using ..QiskitRuntime.Requests: RuntimeServiceException, Requests
+
 end #module API

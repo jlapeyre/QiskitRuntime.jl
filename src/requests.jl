@@ -40,6 +40,16 @@ it is not difficult to do so.
 """
 module Requests
 
+"""
+    RuntimeServiceException{T} <: Exception
+
+The exception thrown when the status returned in the response to a GET or POST
+request indicates an error.
+
+# Fields
+- `status::Int16`: the status code returned in the response
+- `body::{<:JSON3.Object}`: The body of the response as a JSON3 object
+"""
 struct RuntimeServiceException{T} <: Exception
     status::Int16
     body::T
@@ -368,7 +378,8 @@ export job,
     backends,
     backend_status,
     backend_configuration,
-    backend_defaults
+    backend_defaults,
+    RuntimeServiceException
 
 # I don't know how to control Documenter, or the REPL doc systems, as well as I would like
 # So the doc strings are here. Users, internal as well, should access these functions from the outer,
