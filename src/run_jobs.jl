@@ -1,6 +1,5 @@
 module RunJobs
 
-struct RunJob
-end
+struct RunJob end
 
 end # module RunJobs

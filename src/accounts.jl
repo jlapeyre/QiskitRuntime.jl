@@ -89,16 +89,20 @@ end
 # Read JSON from the default credentials file.
 # Return the name of the default file and the JSON object
 # in a named tuple
-function _read_credentials_file() :: NamedTuple
+function _read_credentials_file()::NamedTuple
     acct_filename = _get_credentials_path_json()
     isfile(acct_filename) || return (filename=acct_filename, accts_json=nothing)
     accts_string = String(read(acct_filename))
     accts_json = try
         JSON.read(accts_string)
     catch e
-        throw(ErrorException(LazyString("Parse error while reading $acct_filename", "\n", e.msg)))
+        throw(
+            ErrorException(
+                LazyString("Parse error while reading $acct_filename", "\n", e.msg),
+            ),
+        )
     end
-    return (filename=acct_filename,  accts_json=accts_json)
+    return (filename=acct_filename, accts_json=accts_json)
 end
 
 function _get_account_name(name)
@@ -108,12 +112,16 @@ function _get_account_name(name)
     return name
 end
 
-function _read_account_from_credentials_file(account_name=nothing) :: NamedTuple
+function _read_account_from_credentials_file(account_name=nothing)::NamedTuple
     result = _read_credentials_file()
     isnothing(result.accts_json) && return (filename=result.filename, account=nothing)
     account_name = _get_account_name(account_name)
     account = get(result.accts_json, account_name, nothing)
-    isnothing(account) && throw(ErrorException(lazy"Account \"$account_name\" not found in credentials file \"$(result.filename)\""))
+    isnothing(account) && throw(
+        ErrorException(
+            lazy"Account \"$account_name\" not found in credentials file \"$(result.filename)\"",
+        ),
+    )
     account = QuantumAccount(
         account.channel,
         account.instance,
@@ -273,7 +281,9 @@ Return a list of all [`QuantumAccount`](@ref)s in the user's [credentials file](
 function all_accounts()::Vector{QuantumAccount}
     acct_names = list_accounts()
     isnothing(acct_names) && return nothing
-    return [_read_account_from_credentials_file(acct_name).account for acct_name in acct_names]
+    return [
+        _read_account_from_credentials_file(acct_name).account for acct_name in acct_names
+    ]
 end
 
 end # module Accounts
