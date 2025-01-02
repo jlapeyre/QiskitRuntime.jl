@@ -11,14 +11,22 @@ using Accessors: @set
 # NPZ was started in 2013 and gets little attention. We might vendor and modify it.
 #import NPZ
 import ..NPZ2 as NPZ
-import Dates
-import Base64
+using Dates: Dates
+using Base64: Base64
 import ..Circuits: CircuitString
 import ..PauliOperators: PauliOperator
-import JSON3
+using JSON3: JSON3
 
-import ..PrimitiveResults: PrimitiveResult, SamplerPubResult, DataBin, Metadata,
-    PubResult, ExecutionSpan, LayerError, LayerNoise, PauliLindbladError
+import ..PrimitiveResults:
+    PrimitiveResult,
+    SamplerPubResult,
+    DataBin,
+    Metadata,
+    PubResult,
+    ExecutionSpan,
+    LayerError,
+    LayerNoise,
+    PauliLindbladError
 import ..BitArraysX
 
 # TYPE_MAP is not used at the moment
@@ -44,12 +52,12 @@ function parse_response_datetime(datetime_str::AbstractString)
     # elseif endswith(datetime_str, 'Z') # Need to encode this timezone info somehow, not throw away
     #     datetime_str = datetime_str[1:end-1]
     # end
-    Dates.DateTime(datetime_str)
+    return Dates.DateTime(datetime_str)
 end
 
-function parse_response_maybe_datetime(datetime::Union{AbstractString, Nothing})
+function parse_response_maybe_datetime(datetime::Union{AbstractString,Nothing})
     isnothing(datetime) && return nothing
-    parse_response_datetime(datetime)
+    return parse_response_datetime(datetime)
 end
 
 using TranscodingStreams: TranscodingStream
@@ -69,13 +77,13 @@ The operations are:
 """
 function decode_decompress_deserialize_numpy(data_str)
     transcoder = x -> transcode(GzipDecompressor, x)
-    data_str |>
-        Base64.base64decode |>
-        Vector{UInt8} |>
-        transcoder |>
-        String |>
-        IOBuffer |>
-        NPZ.npzreadarray
+    return data_str |>
+           Base64.base64decode |>
+           Vector{UInt8} |>
+           transcoder |>
+           String |>
+           IOBuffer |>
+           NPZ.npzreadarray
 end
 
 # This is a "typed" value that we do not yet handle specially.
@@ -89,13 +97,13 @@ is_typed_value(dict) = haskey(dict, :__type__) && haskey(dict, :__value__)
 # We expect a version number here, and return v"0" if
 # there is none.
 function get_version(dictlike)
-    VersionNumber(get(dictlike, "version", 0))
+    return VersionNumber(get(dictlike, "version", 0))
 end
 
 # Set version from number (Integer), using 0 if nothing.
 function version_value(value)
     isnothing(value) && (value = 0)
-    VersionNumber(value)
+    return VersionNumber(value)
 end
 
 decode(array::JSON3.Array) = map(decode, array)
@@ -112,25 +120,29 @@ function decode(key::Symbol, value)
     if key == :version
         return (key, version_value(value))
     elseif key == :layer_noise
-        return (key, LayerNoise(value[:unique_mitigated_layers],
-                                value[:unique_mitigated_layers_noise_overhead],
-                                value[:total_mitigated_layers],
-                                value[:noise_overhead]))
+        return (
+            key,
+            LayerNoise(
+                value[:unique_mitigated_layers],
+                value[:unique_mitigated_layers_noise_overhead],
+                value[:total_mitigated_layers],
+                value[:noise_overhead],
+            ),
+        )
     end
-    (decode(key), decode(value))
+    return (decode(key), decode(value))
 end
 
 # Decode is mainly for the REST "results" response.
 # Many, but not all, payloads are a dict with two keys, `__type__` and `__value__`.
 # The content should be predictable.
-function decode(dict::Union{JSON3.Object, Dict}; job_id=nothing)
+function decode(dict::Union{JSON3.Object,Dict}; job_id=nothing)
     # Some things, like Pauli strings don't have the type and value keys.
     if !is_typed_value(dict)
         return Dict(begin
-                        (k, v) = decode(k, v)
-                        k => v
-                    end
-                    for (k, v) in dict)
+            (k, v) = decode(k, v)
+            k => v
+        end for (k, v) in dict)
     end
     _type = Symbol(dict[haskey(dict, :__class__) ? :__class__ : :__type__])
     _value = dict[:__value__]
@@ -149,7 +161,9 @@ function decode(dict::Union{JSON3.Object, Dict}; job_id=nothing)
     elseif _type == :DataBin
         fields = _value.fields
         field_names = Symbol.(keys(fields))
-        nt = NamedTuple{(field_names...,)}(Tuple(decode(fields[name]) for name in field_names))
+        nt = NamedTuple{(field_names...,)}(
+            Tuple(decode(fields[name]) for name in field_names),
+        )
         DataBin(nt)
     elseif _type == :datetime
         parse_response_datetime(_value)
@@ -179,12 +193,13 @@ end
 # Assume that `T` has a simple constructor.  Construct `T` from items in
 # `values`.  The keys of `values` are ordered. We need to pass contents of `values` in the
 # correct order.
-function decode(::Type{T}, values) where T
-    return T((begin
-                  (k, v) = decode(k, v)
-                  v
-                end
-                for (k, v) in values)...,)
+function decode(::Type{T}, values) where {T}
+    return T((
+        begin
+            (k, v) = decode(k, v)
+            v
+        end for (k, v) in values
+    )...)
     # T((begin
     #        if k == "version"
     #            version_value(v)
@@ -247,7 +262,7 @@ function bitarrayalt_from_qiskit_bitarray(array::Array{UInt8}, num_bits::Integer
     # num_bits <= dim1bits ||
     #     throw(DimensionMismatch(lazy"Required number of bits $num_bits too small for first dimension of array in bits $dim1bits")
     new_dims = @set dims[1] = num_bits
-    BitArraysX.BitArrayAlt(chunks, new_dims)
+    return BitArraysX.BitArrayAlt(chunks, new_dims)
 end
 
 end # module Decode

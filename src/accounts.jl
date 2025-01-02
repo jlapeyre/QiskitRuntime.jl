@@ -34,7 +34,7 @@ import ..QuantumAccount
 
 # We copy the names from the Python client, for the  most part.
 # But we add some, omit some, and modify some (!)
-const _DEFAULT_QISKIT_USER_DIR =  joinpath(homedir(), ".qiskit")
+const _DEFAULT_QISKIT_USER_DIR = joinpath(homedir(), ".qiskit")
 const _DEFAULT_CREDENTIALS_FILENAME = "qiskit-ibm.json"
 const _DEFAULT_ACCOUNT_NAME = "default"
 const _DEFAULT_ACCOUNT_NAME_IBM_QUANTUM = "default-ibm-quantum"
@@ -44,26 +44,41 @@ const _IBM_QUANTUM_CHANNEL = "ibm_quantum"
 const _CHANNEL_TYPES = [_DEFAULT_CHANNEL_TYPE, "ibm_quantum"]
 const _DEFAULT_QISKIT_IBM_AUTH_URL = "https://auth.quantum-computing.ibm.com/api"
 
-Base.show(io::IO, ::MIME"text/plain", account::QuantumAccount) =
-    Utils._show(io, account; newlines=true)
+function Base.show(io::IO, ::MIME"text/plain", account::QuantumAccount)
+    return Utils._show(io, account; newlines=true)
+end
 
-QuantumAccount(channel, instance::AbstractString, url, token; kws...) =
-    QuantumAccount(channel, Instances.Instance(instance), url, token; kws...)
+function QuantumAccount(channel, instance::AbstractString, url, token; kws...)
+    return QuantumAccount(channel, Instances.Instance(instance), url, token; kws...)
+end
 
-function QuantumAccount(channel, instance, url, token;
-                 private_endpoint::Bool=false, verify::Bool=false,
-                 proxies=nothing)
-    return QuantumAccount{typeof(proxies)}(channel, url, token, instance, private_endpoint,
-                             verify, proxies)
+function QuantumAccount(
+    channel,
+    instance,
+    url,
+    token;
+    private_endpoint::Bool=false,
+    verify::Bool=false,
+    proxies=nothing,
+)
+    return QuantumAccount{typeof(proxies)}(
+        channel,
+        url,
+        token,
+        instance,
+        private_endpoint,
+        verify,
+        proxies,
+    )
 end
 
 function _get_config_path_json()
-    _get_path_in_config(_DEFAULT_CREDENTIALS_FILENAME)
+    return _get_path_in_config(_DEFAULT_CREDENTIALS_FILENAME)
 end
 
 function _get_path_in_config(components...)
     config_dir = get_env(:QISKIT_USER_DIR, _DEFAULT_QISKIT_USER_DIR)
-    joinpath(config_dir, components...)
+    return joinpath(config_dir, components...)
 end
 
 # TODO: Allow this to be set by env var? Is there one for the Python impl.?
@@ -92,8 +107,13 @@ function _read_account_from_config_file(name=nothing)
     name = _get_account_name(name)
     account = get(accts_json, name, nothing)
     isnothing(account) && throw(ErrorException(lazy"Account \"$name\" not found"))
-    return QuantumAccount(account.channel, account.instance, account.url, Token(account.token);
-                   private_endpoint=account.private_endpoint)
+    return QuantumAccount(
+        account.channel,
+        account.instance,
+        account.url,
+        Token(account.token);
+        private_endpoint=account.private_endpoint,
+    )
 end
 
 # instance and token must both be present
@@ -109,7 +129,9 @@ end
 
 end # module _Accounts
 
-import ._Accounts: _read_account_config_file_json, _get_account_from_env_variables,
+import ._Accounts:
+    _read_account_config_file_json,
+    _get_account_from_env_variables,
     _read_account_from_config_file
 
 """
@@ -239,10 +261,10 @@ end
 
 Return a list of all [`QuantumAccount`](@ref)s in the user's [credentials file](@ref credentials_file).
 """
-function all_accounts() :: Vector{QuantumAccount}
+function all_accounts()::Vector{QuantumAccount}
     names = list_accounts()
     isnothing(names) && return nothing
-    [_read_account_from_config_file(name) for name in names]
+    return [_read_account_from_config_file(name) for name in names]
 end
 
 end # module Accounts

@@ -35,14 +35,14 @@ const TypeMaps = [
     ("c8", Complex{Float32}),
     ("c16", Complex{Float64}),
 ]
-const Numpy2Julia = Dict{String, DataType}(s => t for (s, t) in TypeMaps)
+const Numpy2Julia = Dict{String,DataType}(s => t for (s, t) in TypeMaps)
 
-const Julia2Numpy = Dict{DataType, String}()
+const Julia2Numpy = Dict{DataType,String}()
 
 # function __init__()
-    for (s,t) in TypeMaps
-        Julia2Numpy[t] = s
-    end
+for (s, t) in TypeMaps
+    Julia2Numpy[t] = s
+end
 #end
 
 # Julia2Numpy is a dictionary that uses Types as keys.
@@ -53,16 +53,16 @@ const Julia2Numpy = Dict{DataType, String}()
 # be fixed by rehashing the Dict when the module is
 # loaded.
 
-readle(ios::IO, ::Type{T}) where T = ltoh(read(ios, T)) # ltoh is inverse of htol
+readle(ios::IO, ::Type{T}) where {T} = ltoh(read(ios, T)) # ltoh is inverse of htol
 
 function writecheck(io::IO, x::Any)
     n = write(io, x) # returns size in bytes
-    n == sizeof(x) || error("short write") # sizeof is size in bytes
+    return n == sizeof(x) || error("short write") # sizeof is size in bytes
 end
 
 # Endianness only pertains to multi-byte things
 writele(ios::IO, x::AbstractVector{UInt8}) = writecheck(ios, x)
-writele(ios::IO, x::AbstractVector{CodeUnits{UInt8, <:Any}}) = writecheck(ios, x)
+writele(ios::IO, x::AbstractVector{CodeUnits{UInt8,<:Any}}) = writecheck(ios, x)
 # codeunits returns vector of CodeUnits in 7+, uint in 6
 writele(ios::IO, x::AbstractString) = writele(ios, codeunits(x))
 
@@ -70,17 +70,17 @@ writele(ios::IO, x::UInt16) = writecheck(ios, htol(x))
 
 function parsechar(s::AbstractString, c::Char)
     firstchar = s[firstindex(s)]
-    if  firstchar != c
+    if firstchar != c
         error("parsing header failed: expected character '$c', found '$firstchar'")
     end
-    SubString(s, nextind(s, 1))
+    return SubString(s, nextind(s, 1))
 end
 
 function parsestring(s::AbstractString)
     s = parsechar(s, '\'')
-    parts = split(s, '\'', limit = 2)
+    parts = split(s, '\''; limit=2)
     length(parts) != 2 && error("parsing header failed: malformed string")
-    parts[1], parts[2]
+    return parts[1], parts[2]
 end
 
 function parsebool(s::AbstractString)
@@ -89,7 +89,7 @@ function parsebool(s::AbstractString)
     elseif SubString(s, firstindex(s), thisind(s, 5)) == "False"
         return false, SubString(s, nextind(s, 5))
     end
-    error("parsing header failed: excepted True or False")
+    return error("parsing header failed: excepted True or False")
 end
 
 function parseinteger(s::AbstractString)
@@ -124,7 +124,7 @@ function parsetuple(s::AbstractString)
         s = parsechar(s, ',')
     end
     s = parsechar(s, ')')
-    Tuple(tup), s
+    return Tuple(tup), s
 end
 
 function parsedtype(s::AbstractString)
@@ -143,7 +143,7 @@ function parsedtype(s::AbstractString)
     if !haskey(Numpy2Julia, t)
         error("parsing header failed: unsupported type $t")
     end
-    (toh, Numpy2Julia[t]), s
+    return (toh, Numpy2Julia[t]), s
 end
 
 struct Header{T,N,F<:Function}
@@ -152,9 +152,11 @@ struct Header{T,N,F<:Function}
     shape::NTuple{N,Int}
 end
 
-Header{T}(descr::F, fortran_order, shape::NTuple{N,Int}) where {T,N,F} = Header{T,N,F}(descr, fortran_order, shape)
+function Header{T}(descr::F, fortran_order, shape::NTuple{N,Int}) where {T,N,F}
+    return Header{T,N,F}(descr, fortran_order, shape)
+end
 Base.size(hdr::Header) = hdr.shape
-Base.eltype(hdr::Header{T}) where T = T
+Base.eltype(hdr::Header{T}) where {T} = T
 Base.ndims(hdr::Header{T,N}) where {T,N} = N
 
 function parseheader(s::AbstractString)
@@ -190,7 +192,7 @@ function parseheader(s::AbstractString)
     if s != ""
         error("malformed header")
     end
-    Header{T}(dict["descr"], dict["fortran_order"], dict["shape"])
+    return Header{T}(dict["descr"], dict["fortran_order"], dict["shape"])
 end
 
 function readheader(f::IO)
@@ -209,7 +211,7 @@ function readheader(f::IO)
         error("unsupported NPZ version")
     end
     hdr = ascii(String(read!(f, Vector{UInt8}(undef, hdrlen))))
-    parseheader(strip(hdr))
+    return parseheader(strip(hdr))
 end
 
 function _npzreadarray(f, hdr::Header{T}) where {T}
@@ -222,17 +224,17 @@ function _npzreadarray(f, hdr::Header{T}) where {T}
             x = permutedims(x, collect(ndims(x):-1:1))
         end
     end
-    ndims(x) == 0 ? x[1] : x
+    return ndims(x) == 0 ? x[1] : x
 end
 
 function npzreadarray(f::IO)
     hdr = readheader(f)
-    _npzreadarray(f, hdr)
+    return _npzreadarray(f, hdr)
 end
 
 function samestart(a::AbstractVector, b::AbstractVector)
     nb = length(b)
-    length(a) >= nb && view(a, 1:nb) == b
+    return length(a) >= nb && view(a, 1:nb) == b
 end
 
 function _maybetrimext(name::AbstractString)
@@ -240,7 +242,7 @@ function _maybetrimext(name::AbstractString)
     if ext == ".npy"
         name = fname
     end
-    name
+    return name
 end
 
 """
@@ -336,24 +338,22 @@ end
 #             if f.name in vars || _maybetrimext(f.name) in vars)
 # end
 
-function npzwritearray(
-    f::IO, x::AbstractArray{UInt8}, T::DataType, shape)
-
+function npzwritearray(f::IO, x::AbstractArray{UInt8}, T::DataType, shape)
     if !haskey(Julia2Numpy, T)
         error("unsupported type $T")
     end
     writele(f, NPYMagic)
     writele(f, Version)
 
-    descr =  (ENDIAN_BOM == 0x01020304 ? ">" : "<") * Julia2Numpy[T]
+    descr = (ENDIAN_BOM == 0x01020304 ? ">" : "<") * Julia2Numpy[T]
     dict = "{'descr': '$descr', 'fortran_order': True, 'shape': $(Tuple(shape)), }"
 
     # The dictionary is padded with enough whitespace so that
     # the array data is 16-byte aligned
-    n = length(NPYMagic)+length(Version)+2+length(dict)
-    pad = (div(n+16-1, 16)*16) - n
+    n = length(NPYMagic) + length(Version) + 2 + length(dict)
+    pad = (div(n + 16 - 1, 16) * 16) - n
     if pad > 0
-        dict *= " "^(pad-1) * "\n"
+        dict *= " "^(pad - 1) * "\n"
     end
 
     writele(f, UInt16(length(dict)))
@@ -364,11 +364,11 @@ function npzwritearray(
 end
 
 function npzwritearray(f::IO, x::AbstractArray)
-    npzwritearray(f, reinterpret(UInt8, vec(x)), eltype(x), size(x))
+    return npzwritearray(f, reinterpret(UInt8, vec(x)), eltype(x), size(x))
 end
 
 function npzwritearray(f::IO, x::Number)
-    npzwritearray(f, reinterpret(UInt8, [x]), typeof(x), ())
+    return npzwritearray(f, reinterpret(UInt8, [x]), typeof(x), ())
 end
 
 """
@@ -394,7 +394,7 @@ julia> npzread("abc.npy")
 """
 function npzwrite(filename::AbstractString, x)
     open(filename, "w") do f
-        npzwritearray(f, x)
+        return npzwritearray(f, x)
     end
 end
 
@@ -434,7 +434,7 @@ Dict{String,Any} with 3 entries:
 """
 function npzwrite(filename::AbstractString, vars::Dict{<:AbstractString})
     # Are all files compressed by default ?
-    error("Not supported")
+    return error("Not supported")
     # dir = ZipFile.Writer(filename)
 
     # if length(vars) == 0
@@ -451,12 +451,12 @@ function npzwrite(filename::AbstractString, vars::Dict{<:AbstractString})
 end
 
 function npzwrite(filename::AbstractString, args...; kwargs...)
-    dkwargs = Dict(string(k) => v for (k,v) in kwargs)
-    dargs = Dict("arr_"*string(i-1) => v for (i,v) in enumerate(args))
+    dkwargs = Dict(string(k) => v for (k, v) in kwargs)
+    dargs = Dict("arr_" * string(i - 1) => v for (i, v) in enumerate(args))
 
     d = convert(Dict{String,Any}, merge(dargs, dkwargs))
 
-    npzwrite(filename, d)
+    return npzwrite(filename, d)
 end
 
 # support for FileIO

@@ -74,7 +74,8 @@ julia> p[1] = (true, true); p
 + YYZ
 ```
 """
-struct PauliOperator{Tₚ<:AbstractArray{UInt8,0}, Tᵥ<:AbstractVector{<:Unsigned}} <: AbstractCliffordOperator
+struct PauliOperator{Tₚ<:AbstractArray{UInt8,0},Tᵥ<:AbstractVector{<:Unsigned}} <:
+       AbstractCliffordOperator
     phase::Tₚ
     nqubits::Int
     xz::Tᵥ
@@ -84,32 +85,34 @@ nqubits(pauli::PauliOperator) = pauli.nqubits
 
 """Get a view of the X part of the `UInt` array of packed qubits of a given Pauli operator."""
 function xview(p::PauliOperator)
-    @view p.xz[1:end÷2]
+    @view p.xz[1:(end ÷ 2)]
 end
 """Get a view of the Y part of the `UInt` array of packed qubits of a given Pauli operator."""
 function zview(p::PauliOperator)
-    @view p.xz[end÷2+1:end]
+    @view p.xz[(end ÷ 2 + 1):end]
 end
 """Extract as a new bit array the X part of the `UInt` array of packed qubits of a given Pauli operator."""
 function xbit(p::PauliOperator)
     one = eltype(p.xz)(1)
-    size = sizeof(eltype(p.xz))*8
-    [(word>>s)&one==one for word in xview(p) for s in 0:size-1][begin:p.nqubits]
+    size = sizeof(eltype(p.xz)) * 8
+    return [(word >> s) & one == one for word in xview(p) for s in 0:(size - 1)][begin:(p.nqubits)]
 end
 """Extract as a new bit array the Z part of the `UInt` array of packed qubits of a given Pauli operator."""
 function zbit(p::PauliOperator)
     one = eltype(p.xz)(1)
-    size = sizeof(eltype(p.xz))*8
-    [(word>>s)&one==one for word in zview(p) for s in 0:size-1][begin:p.nqubits]
+    size = sizeof(eltype(p.xz)) * 8
+    return [(word >> s) & one == one for word in zview(p) for s in 0:(size - 1)][begin:(p.nqubits)]
 end
 
 module _PauliOperators
 
-import ..PauliOperator, ..xbit, ..zbit
+using ..PauliOperator: PauliOperator
+using ..xbit: xbit
+using ..zbit: zbit
 
-import LinearAlgebra
+using LinearAlgebra: LinearAlgebra
 
-bitsizeof(::Type{T}) where T = sizeof(T) * 8
+bitsizeof(::Type{T}) where {T} = sizeof(T) * 8
 
 """
     log2bitsizeof(::Type{T}) where T
@@ -119,14 +122,14 @@ Return base-2 log of the number of bits in the representation of the type `T`.
 The value is likely only meaningful for primitive types `T`. The returned value is
 compiled constant for each `T`.
 """
-@inline @generated function log2bitsizeof(::Type{T}) where T
-    :(Int(log2(bitsizeof($T))))
+@inline @generated function log2bitsizeof(::Type{T}) where {T}
+    return :(Int(log2(bitsizeof($T))))
 end
 
-@inline _mask(::T) where T<:Unsigned = sizeof(T)*8-1
-@inline _mask(::Type{T}) where T<:Unsigned = sizeof(T)*8-1
-@inline _div(T,l) = l >> log2bitsizeof(T)
-@inline _mod(T,l) = l & _mask(T)
+@inline _mask(::T) where {T<:Unsigned} = sizeof(T) * 8 - 1
+@inline _mask(::Type{T}) where {T<:Unsigned} = sizeof(T) * 8 - 1
+@inline _div(T, l) = l >> log2bitsizeof(T)
+@inline _mod(T, l) = l & _mask(T)
 
 """
 get_bitmask_idxs(xzs::AbstractArray{<:Unsigned}, i::Int)
@@ -146,8 +149,8 @@ the following values based on the index `i`:
 @inline function get_bitmask_idxs(xzs::AbstractArray{<:Unsigned}, i::Int)
     T = eltype(xzs)
     lowbit = T(1)
-    ibig = _div(T, i-1) + 1
-    ismall = _mod(T, i-1)
+    ibig = _div(T, i - 1) + 1
+    ismall = _mod(T, i - 1)
     ismallm = lowbit << ismall
     return lowbit, ibig, ismall, ismallm
 end
@@ -155,40 +158,55 @@ end
 # Neccesary stuff copied from elsewhere in QuantumClifford.
 # Predefined constants representing the permitted phases encoded.
 # in the low bits of UInt8.
-const _p  = 0x00
+const _p = 0x00
 const _pi = 0x01
-const _m  = 0x02
+const _m = 0x02
 const _mi = 0x03
 
-const phasedict = Dict(""=>_p,"+"=>_p,"i"=>_pi,"+i"=>_pi,"-"=>_m,"-i"=>_mi)
-const toletter = Dict((false,false)=>"_",(true,false)=>"X",(false,true)=>"Z",(true,true)=>"Y")
+const phasedict = Dict("" => _p, "+" => _p, "i" => _pi, "+i" => _pi, "-" => _m, "-i" => _mi)
+const toletter = Dict(
+    (false, false) => "_",
+    (true, false) => "X",
+    (false, true) => "Z",
+    (true, true) => "Y",
+)
 
-xz2str(x,z) = join(toletter[e] for e in zip(x,z))
+xz2str(x, z) = join(toletter[e] for e in zip(x, z))
 
-function xz2str_limited(x,z, limit=50)
-    tupl = collect(zip(x,z))
+function xz2str_limited(x, z, limit=50)
+    tupl = collect(zip(x, z))
     n = length(tupl)
     if (ismissing(limit) || limit >= n)
         return xz2str(x, z)
     end
-    padding = limit÷2
-    return join(toletter[tupl[i]] for i in 1:padding) * "⋯" * join(toletter[tupl[i]] for i in (n-padding):n)
+    padding = limit ÷ 2
+    return join(toletter[tupl[i]] for i in 1:padding) *
+           "⋯" *
+           join(toletter[tupl[i]] for i in (n - padding):n)
 end
 
 ####
 #### pauli_operator.jl
 ####
 
-PauliOperator(phase::UInt8, nqubits::Int, xz::Tᵥ) where Tᵥ<:AbstractVector{<:Unsigned} = PauliOperator(fill(UInt8(phase),()), nqubits, xz)
+function PauliOperator(
+    phase::UInt8,
+    nqubits::Int,
+    xz::Tᵥ,
+) where {Tᵥ<:AbstractVector{<:Unsigned}}
+    return PauliOperator(fill(UInt8(phase), ()), nqubits, xz)
+end
 function PauliOperator(phase::UInt8, x::AbstractVector{Bool}, z::AbstractVector{Bool})
-    phase = fill(UInt8(phase),())
-    xs = reinterpret(UInt,BitVector(x).chunks)::Vector{UInt}
-    zs = reinterpret(UInt,BitVector(z).chunks)::Vector{UInt}
-    xzs = cat(xs, zs, dims=1)
-    PauliOperator(phase, length(x), xzs)
+    phase = fill(UInt8(phase), ())
+    xs = reinterpret(UInt, BitVector(x).chunks)::Vector{UInt}
+    zs = reinterpret(UInt, BitVector(z).chunks)::Vector{UInt}
+    xzs = cat(xs, zs; dims=1)
+    return PauliOperator(phase, length(x), xzs)
 end
 PauliOperator(x::AbstractVector{Bool}, z::AbstractVector{Bool}) = PauliOperator(0x0, x, z)
-PauliOperator(xz::AbstractVector{Bool}) = PauliOperator(0x0, (@view xz[1:end÷2]), (@view xz[end÷2+1:end]))
+function PauliOperator(xz::AbstractVector{Bool})
+    return PauliOperator(0x0, (@view xz[1:(end ÷ 2)]), (@view xz[(end ÷ 2 + 1):end]))
+end
 
 """
     PauliOperator(str::AbstractString)
@@ -205,60 +223,80 @@ julia> PauliOperator("-iXYZ")
 ```
 """
 function PauliOperator(str::AbstractString)
-    _P_str(str)
+    return _P_str(str)
 end
 
 #### Copied from QuantumClifford.jl
 ####
-_show(io::IO, p::PauliOperator, limit=50) = print(io, ["+ ","+i","- ","-i"][p.phase[]+1]*xz2str_limited(xbit(p),zbit(p), limit))
+function _show(io::IO, p::PauliOperator, limit=50)
+    return print(
+        io,
+        ["+ ", "+i", "- ", "-i"][p.phase[] + 1] * xz2str_limited(xbit(p), zbit(p), limit),
+    )
+end
 
 function Base.show(io::IO, p::PauliOperator)
     if get(io, :compact, false) | haskey(io, :typeinfo)
         _show(io, p, 10)
     elseif get(io, :limit, false)
         sz = displaysize(io)
-        _show(io, p, max(2, sz[2]-7))
+        _show(io, p, max(2, sz[2] - 7))
     else
         _show(io, p, missing)
     end
 end
 ####
 
-
 # TODO: This coulde be more efficient
 function _P_str(a::Union{String,SubString{String}})
-    letters = filter(x->occursin(x,"_IZXY"),a)
-    phase = phasedict[strip(filter(x->!occursin(x,"_IZXY"),a))]
-    PauliOperator(phase, [l=='X'||l=='Y' for l in letters], [l=='Z'||l=='Y' for l in letters])
+    letters = filter(x -> occursin(x, "_IZXY"), a)
+    phase = phasedict[strip(filter(x -> !occursin(x, "_IZXY"), a))]
+    return PauliOperator(
+        phase,
+        [l == 'X' || l == 'Y' for l in letters],
+        [l == 'Z' || l == 'Y' for l in letters],
+    )
 end
 
-
-function Base.getindex(p::PauliOperator{Tₚ,Tᵥ}, i::Int) where {Tₚ, Tᵥₑ<:Unsigned, Tᵥ<:AbstractVector{Tᵥₑ}}
-    _, ibig, _, ismallm = get_bitmask_idxs(p.xz,i)
-    ((p.xz[ibig] & ismallm) != 0x0)::Bool, ((p.xz[end÷2+ibig] & ismallm) != 0x0)::Bool
+function Base.getindex(
+    p::PauliOperator{Tₚ,Tᵥ},
+    i::Int,
+) where {Tₚ,Tᵥₑ<:Unsigned,Tᵥ<:AbstractVector{Tᵥₑ}}
+    _, ibig, _, ismallm = get_bitmask_idxs(p.xz, i)
+    return ((p.xz[ibig] & ismallm) != 0x0)::Bool,
+    ((p.xz[end ÷ 2 + ibig] & ismallm) != 0x0)::Bool
 end
-Base.getindex(p::PauliOperator{Tₚ,Tᵥ}, r) where {Tₚ, Tᵥₑ<:Unsigned, Tᵥ<:AbstractVector{Tᵥₑ}} = PauliOperator(p.phase[], xbit(p)[r], zbit(p)[r])
+function Base.getindex(
+    p::PauliOperator{Tₚ,Tᵥ},
+    r,
+) where {Tₚ,Tᵥₑ<:Unsigned,Tᵥ<:AbstractVector{Tᵥₑ}}
+    return PauliOperator(p.phase[], xbit(p)[r], zbit(p)[r])
+end
 
-function Base.setindex!(p::PauliOperator{Tₚ,Tᵥ}, (x,z)::Tuple{Bool,Bool}, i) where {Tₚ, Tᵥₑ, Tᵥ<:AbstractVector{Tᵥₑ}}
-    _, ibig, _, ismallm = get_bitmask_idxs(p.xz,i)
+function Base.setindex!(
+    p::PauliOperator{Tₚ,Tᵥ},
+    (x, z)::Tuple{Bool,Bool},
+    i,
+) where {Tₚ,Tᵥₑ,Tᵥ<:AbstractVector{Tᵥₑ}}
+    _, ibig, _, ismallm = get_bitmask_idxs(p.xz, i)
     if x
         p.xz[ibig] |= ismallm
     else
         p.xz[ibig] &= ~(ismallm)
     end
     if z
-        p.xz[end÷2+ibig] |= ismallm
+        p.xz[end ÷ 2 + ibig] |= ismallm
     else
-        p.xz[end÷2+ibig] &= ~(ismallm)
+        p.xz[end ÷ 2 + ibig] &= ~(ismallm)
     end
-    p
+    return p
 end
 
 Base.firstindex(p::PauliOperator) = 1
 
 Base.lastindex(p::PauliOperator) = p.nqubits
 
-Base.eachindex(p::PauliOperator) = 1:p.nqubits
+Base.eachindex(p::PauliOperator) = 1:(p.nqubits)
 
 Base.size(pauli::PauliOperator) = (pauli.nqubits,)
 
@@ -266,42 +304,52 @@ Base.length(pauli::PauliOperator) = pauli.nqubits
 
 nqubits(pauli::PauliOperator) = pauli.nqubits
 
-Base.:(==)(l::PauliOperator, r::PauliOperator) = r.phase==l.phase && r.nqubits==l.nqubits && r.xz==l.xz
+function Base.:(==)(l::PauliOperator, r::PauliOperator)
+    return r.phase == l.phase && r.nqubits == l.nqubits && r.xz == l.xz
+end
 
-Base.hash(p::PauliOperator, h::UInt) = hash(p.phase,hash(p.nqubits,hash(p.xz, h)))
+Base.hash(p::PauliOperator, h::UInt) = hash(p.phase, hash(p.nqubits, hash(p.xz, h)))
 
-Base.copy(p::PauliOperator) = PauliOperator(copy(p.phase),p.nqubits,copy(p.xz))
+Base.copy(p::PauliOperator) = PauliOperator(copy(p.phase), p.nqubits, copy(p.xz))
 
 function LinearAlgebra.inv(p::PauliOperator)
-  ph = p.phase[]
-  phin = xor((ph << 1) & ~(UInt8(1) << 2), ph)
-  return PauliOperator(phin, p.nqubits, copy(p.xz))
+    ph = p.phase[]
+    phin = xor((ph << 1) & ~(UInt8(1) << 2), ph)
+    return PauliOperator(phin, p.nqubits, copy(p.xz))
 end
 
 function Base.deleteat!(p::PauliOperator, subset)
-    p =p[setdiff(1:length(p), subset)]
+    p = p[setdiff(1:length(p), subset)]
     return p
 end
 
-_nchunks(i::Int,T::Type{<:Unsigned}) = 2*( (i-1) ÷ (8*sizeof(T)) + 1 )
-Base.zero(::Type{PauliOperator{Tₚ, Tᵥ}}, q) where {Tₚ,T<:Unsigned,Tᵥ<:AbstractVector{T}} = PauliOperator(zeros(UInt8), q, zeros(T, _nchunks(q,T)))
-Base.zero(::Type{PauliOperator}, q) = zero(PauliOperator{Array{UInt8, 0}, Vector{UInt}}, q)
+_nchunks(i::Int, T::Type{<:Unsigned}) = 2 * ((i - 1) ÷ (8 * sizeof(T)) + 1)
+function Base.zero(
+    ::Type{PauliOperator{Tₚ,Tᵥ}},
+    q,
+) where {Tₚ,T<:Unsigned,Tᵥ<:AbstractVector{T}}
+    return PauliOperator(zeros(UInt8), q, zeros(T, _nchunks(q, T)))
+end
+Base.zero(::Type{PauliOperator}, q) = zero(PauliOperator{Array{UInt8,0},Vector{UInt}}, q)
 Base.zero(p::P) where {P<:PauliOperator} = zero(P, nqubits(p))
 
 """Zero-out the phases and single-qubit operators in a [`PauliOperator`](@ref)"""
-@inline function zero!(p::PauliOperator{Tₚ,Tᵥ}) where {Tₚ, Tᵥₑ<:Unsigned, Tᵥ<:AbstractVector{Tᵥₑ}}
+@inline function zero!(
+    p::PauliOperator{Tₚ,Tᵥ},
+) where {Tₚ,Tᵥₑ<:Unsigned,Tᵥ<:AbstractVector{Tᵥₑ}}
     fill!(p.xz, zero(Tᵥₑ))
     p.phase[] = 0x0
-    p
+    return p
 end
-
 
 end # module _PauliOperators
 
 import ._PauliOperators: _P_str
 
 macro P_str(a)
-    quote _P_str($a) end
+    quote
+        _P_str($a)
+    end
 end
 
 """
@@ -322,13 +370,17 @@ function embed(n::Int, i::Int, p::PauliOperator)
         pout.phase[] = p.phase[]
         return pout
     else
-        throw(ArgumentError("""
-        You are trying to embed a small Pauli operator into a larger Pauli operator.
-        However, you have not given all the positions at which the operator needs to be embedded.
-        If you are directly calling `embed`, use the form `embed(nqubits, indices::Tuple, p::PauliOperator)`.
-        If you are not using `embed` directly, then `embed` must have been incorrectly called
-        by one of the functions you have called.
-        """))
+        throw(
+            ArgumentError(
+                """
+You are trying to embed a small Pauli operator into a larger Pauli operator.
+However, you have not given all the positions at which the operator needs to be embedded.
+If you are directly calling `embed`, use the form `embed(nqubits, indices::Tuple, p::PauliOperator)`.
+If you are not using `embed` directly, then `embed` must have been incorrectly called
+by one of the functions you have called.
+""",
+            ),
+        )
     end
 end
 
@@ -342,13 +394,17 @@ function embed(n::Int, indices, p::PauliOperator)
         pout.phase[] = p.phase[]
         return pout
     else
-        throw(ArgumentError(lazy"""
-        You are trying to embed a small Pauli operator into a larger Pauli operator.
-        However, you have not given all the positions at which the operator needs to be embedded.
-        The operator you are embedding is of length $(length(p)), but you have specified $(length(indices)) indices.
-        If you are not using `embed` directly, then `embed` must have been incorrectly called
-        by one of the functions you have called.
-        """))
+        throw(
+            ArgumentError(
+                lazy"""
+You are trying to embed a small Pauli operator into a larger Pauli operator.
+However, you have not given all the positions at which the operator needs to be embedded.
+The operator you are embedding is of length $(length(p)), but you have specified $(length(indices)) indices.
+If you are not using `embed` directly, then `embed` must have been incorrectly called
+by one of the functions you have called.
+""",
+            ),
+        )
     end
 end
 

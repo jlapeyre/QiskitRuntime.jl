@@ -56,7 +56,7 @@ include("requests.jl")
 include("backends.jl")
 include("jobs.jl")
 
-import Reexport
+using Reexport: Reexport
 include("api.jl")
 Reexport.@reexport using .API
 

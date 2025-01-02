@@ -29,21 +29,21 @@ function Base.print(io::IO, c::AbstractCircuitString)
     v = c.data
     print(io, typeof(c), "(")
     if length(v) > 100
-        print(io, v[1:20], " ... ", v[end-20:end])
+        print(io, v[1:20], " ... ", v[(end - 20):end])
     else
         print(io, v)
     end
-    print(io, ")")
+    return print(io, ")")
 end
 
 function Base.show(io::IO, ::MIME"text/plain", c::AbstractCircuitString)
-    print(io, c)
+    return print(io, c)
 end
 
 Base.show(io::IO, c::AbstractCircuitString) = print(io, c)
 
 function Base.string(c::AbstractCircuitString)
-    c.data
+    return c.data
 end
 
 end # module Circuits

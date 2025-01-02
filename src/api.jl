@@ -14,7 +14,7 @@ by submodules that implement a layer on REST requests. So to get the exported sy
 """
 module API
 
-import Reexport
+using Reexport: Reexport
 
 Reexport.@reexport using ..QiskitRuntime.Ids
 Reexport.@reexport using ..QiskitRuntime.JSON

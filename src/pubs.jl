@@ -44,25 +44,33 @@ function Base.convert(::Type{String}, primitive::PrimitiveType)
 end
 
 function Base.string(primitive::PrimitiveType)
-    convert(String, primitive)
+    return convert(String, primitive)
 end
 
-abstract type AbstractPUB{CircT, ParamsT} end
+abstract type AbstractPUB{CircT,ParamsT} end
 
 """
     SamplerPUB{CircT, ParamsT}
 
 A [PUB](https://docs.quantum.ibm.com/guides/primitive-input-output#pubs) for the Sampler primitive.
 """
-struct SamplerPUB{CircT <: AbstractCircuitString, ParamsT, ST<:Union{Int, Nothing}} <: AbstractPUB{CircT, ParamsT}
+struct SamplerPUB{CircT<:AbstractCircuitString,ParamsT,ST<:Union{Int,Nothing}} <:
+       AbstractPUB{CircT,ParamsT}
     _circuit::CircT
     _params::ParamsT
     _num_shots::ST
 
     function SamplerPUB(circuit, params=nothing, num_shots=nothing)
-        !isnothing(num_shots) && num_shots <= 0 &&
-            throw(ArgumentError(lazy"`num_shots` must be greater than zero. Got $num_shots"))
-        new{typeof(circuit), typeof(params), typeof(num_shots)}(circuit, params, num_shots)
+        !isnothing(num_shots) &&
+            num_shots <= 0 &&
+            throw(
+                ArgumentError(lazy"`num_shots` must be greater than zero. Got $num_shots"),
+            )
+        return new{typeof(circuit),typeof(params),typeof(num_shots)}(
+            circuit,
+            params,
+            num_shots,
+        )
     end
 end
 
@@ -84,7 +92,7 @@ end
 
 A [PUB](https://docs.quantum.ibm.com/guides/primitive-input-output#pubs) for the Estimator primitive.
 """
-struct EstimatorPUB{CircT <: AbstractCircuitString, ParamsT, ObsT} <: AbstractPUB{CircT, ParamsT}
+struct EstimatorPUB{CircT<:AbstractCircuitString,ParamsT,ObsT} <: AbstractPUB{CircT,ParamsT}
     _circuit::CircT
     _observables::ObsT # a Vector, or do we need general Array?
     _params::ParamsT
@@ -92,7 +100,12 @@ struct EstimatorPUB{CircT <: AbstractCircuitString, ParamsT, ObsT} <: AbstractPU
 
     function EstimatorPUB(circuit, observables, params=nothing, precision=0.0)
         precision >= 0 || throw(ArgumentError(lazy"`precision` must be greater than zero"))
-        new{typeof(circuit), typeof(params), typeof(observables)}(circuit, observables, params, precision)
+        return new{typeof(circuit),typeof(params),typeof(observables)}(
+            circuit,
+            observables,
+            params,
+            precision,
+        )
     end
 end
 
@@ -122,7 +135,11 @@ api_primitive_type(::Type{<:SamplerPUB}) = "sampler"
 api_primitive_type(::AbstractVector{T}) where {T<:AbstractPUB} = api_primitive_type(T)
 
 function supports_qiskit(x::AbstractVector)
-    throw(ArgumentError(lazy"Vector of PUBs must have element type `EstimatorPUB` or SamplerPUB. Got type `$(eltype(x))`"))
+    throw(
+        ArgumentError(
+            lazy"Vector of PUBs must have element type `EstimatorPUB` or SamplerPUB. Got type `$(eltype(x))`",
+        ),
+    )
 end
 
 end # module PUBs

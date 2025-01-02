@@ -34,7 +34,7 @@ function _show(io::IO, object; field_names=true, newlines=false, indent=0) # pri
             println(io)
         end
     end
-    showfunc(io, outer_indent_str, ")")
+    return showfunc(io, outer_indent_str, ")")
 end
 
 end # module Utils

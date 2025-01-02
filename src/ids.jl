@@ -11,7 +11,7 @@ This module implements identification numbers and related objects.
 """
 module Ids
 
-import Random
+using Random: Random
 
 export JobId, UserId, Token, validate
 
@@ -40,7 +40,7 @@ struct JobId
     id::String
     function JobId(id::String)
         validate(JobId, id)
-        new(id)
+        return new(id)
     end
 end
 
@@ -55,7 +55,7 @@ be other restrictions, but we don't know about them and cannot check them.
 function validate(::Type{JobId}, job_id::AbstractString)
     length(job_id) == 20 || error("job id has incorrect length")
     occursin(r"^[a-z|0-9]+$", job_id) || error("Illegal character in job id")
-    true
+    return true
 end
 
 """
@@ -95,18 +95,18 @@ The server returns 24 hex digits. We encode this as 96 bits in three `UInt32`s.
 Thus, validation occurs on construction.
 """
 struct UserId
-    data::NTuple{3, UInt32}
+    data::NTuple{3,UInt32}
 
-    function UserId(data::NTuple{3, UInt32})
-        new(data)
+    function UserId(data::NTuple{3,UInt32})
+        return new(data)
     end
 
     function UserId(str::AbstractString)
-        parse(UserId, str)
+        return parse(UserId, str)
     end
 end
 
-Base.string(uid::UserId) = join((string(x;base=16, pad=8) for x in uid.data), "")
+Base.string(uid::UserId) = join((string(x; base=16, pad=8) for x in uid.data), "")
 
 """
     Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{UserId}) =
@@ -124,25 +124,25 @@ Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{UserId}) =
 # But it uses StringMemory.
 function Base.tryparse(::Type{UserId}, str::AbstractString, parsef::F=tryparse) where {F}
     length(str) == 24 || return nothing
-    strparts = Tuple(@view str[(i-1)*8 + 1:i*8] for i in 1:3)
+    strparts = Tuple(@view str[((i - 1) * 8 + 1):(i * 8)] for i in 1:3)
     nums = (parsef(UInt32, part; base=16) for part in strparts)
     any(isnothing, nums) && return nothing
-    UserId(Tuple(nums))
+    return UserId(Tuple(nums))
 end
 
 function Base.parse(::Type{UserId}, str::AbstractString)
     length(str) == 24 || throw(ValueError(lazy"UserId must be 24 hex digits"))
-    tryparse(UserId, str, parse)
+    return tryparse(UserId, str, parse)
 end
 
 function Base.show(io::IO, id::UserId)
     print(io, typeof(id), "(")
     show(io, string(id))
-    print(io, ")")
+    return print(io, ")")
 end
 
 function Base.print(io::IO, id::UserId)
-    print(io, string(id))
+    return print(io, string(id))
 end
 
 ###
@@ -173,21 +173,21 @@ Token("abcdad8b23e0cb2e19ae5df80aab5003e968ea4e3a69c6efce9a776b26cb157bb7456b189
 ```
 """
 struct Token
-    data::NTuple{8, UInt64}
+    data::NTuple{8,UInt64}
 
-    function Token(data::NTuple{8, UInt64})
-        new(data)
+    function Token(data::NTuple{8,UInt64})
+        return new(data)
     end
 
     function Token(str::AbstractString)
-        parse(Token, str)
+        return parse(Token, str)
     end
 end
 
 function Base.show(io::IO, tok::Token)
     print(io, typeof(tok), "(")
     show(io, string(tok))
-    print(io, ")")
+    return print(io, ")")
 end
 
 """
@@ -200,20 +200,20 @@ This might be useful for putting a bogus token in your [credentials file](@ref c
 Random.rand(rng::Random.AbstractRNG, ::Random.SamplerType{Token}) =
     Token(Tuple(rand(rng, UInt64) for _ in 1:8))
 
-Base.string(token::Token) = join((string(x;base=16, pad=16) for x in token.data), "")
+Base.string(token::Token) = join((string(x; base=16, pad=16) for x in token.data), "")
 
 Base.convert(::Type{Token}, id::AbstractString) = Token(id)
 
 function Base.tryparse(::Type{Token}, str::AbstractString, parsef::F=tryparse) where {F}
-    strparts = Tuple(@view str[(i-1)*16 + 1:i*16] for i in 1:8)
+    strparts = Tuple(@view str[((i - 1) * 16 + 1):(i * 16)] for i in 1:8)
     nums = (parsef(UInt64, part; base=16) for part in strparts)
     any(isnothing, nums) && return nothing
-    Token(Tuple(nums))
+    return Token(Tuple(nums))
 end
 
 function Base.parse(::Type{Token}, str::AbstractString)
     length(str) == 128 || throw(ArgumentError(lazy"Token must be 128 hex digits"))
-    tryparse(Token, str, parse)
+    return tryparse(Token, str, parse)
 end
 
 end # module Ids

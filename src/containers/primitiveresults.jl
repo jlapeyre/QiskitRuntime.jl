@@ -2,30 +2,35 @@ module PrimitiveResults
 
 # structs in this module could be reorganized.
 
-import Dates
+using Dates: Dates
 import ..Utils
 import ..Circuits: CircuitString
 import ..PauliOperators: PauliOperator
 import ..Ids: JobId
 
-export PrimitiveResult, PlainResult, SamplerPubResult, PubResult, DataBin, Metadata, ExecutionSpan,
-    LayerError, PauliLindbladError
+export PrimitiveResult,
+    PlainResult,
+    SamplerPubResult,
+    PubResult,
+    DataBin,
+    Metadata,
+    ExecutionSpan,
+    LayerError,
+    PauliLindbladError
 
 struct Metadata
-    fields::Dict{Symbol, Any}
+    fields::Dict{Symbol,Any}
     version::VersionNumber
 end
 
-Base.show(io::IO, ::MIME"text/plain", pr::Metadata) =
-    Utils._show(io, pr; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", pr::Metadata) = Utils._show(io, pr; newlines=true)
 
 struct PubResult
     data
     metadata
 end
 
-Base.show(io::IO, ::MIME"text/plain", pr::PubResult) =
-    Utils._show(io, pr; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", pr::PubResult) = Utils._show(io, pr; newlines=true)
 
 """
     struct PrimitiveResult{T}
@@ -42,8 +47,9 @@ struct PrimitiveResult{T}
     job_id::JobId
 end
 
-Base.show(io::IO, ::MIME"text/plain", pr::PrimitiveResult) =
-    Utils._show(io, pr; newlines=true)
+function Base.show(io::IO, ::MIME"text/plain", pr::PrimitiveResult)
+    return Utils._show(io, pr; newlines=true)
+end
 
 # Some results are not typed. They are a plain dict.
 # We make up a name: `PlainResult`
@@ -61,24 +67,22 @@ struct PlainResult
     job_id::JobId
 end
 
-Base.show(io::IO, ::MIME"text/plain", pr::PlainResult) =
-    Utils._show(io, pr; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", pr::PlainResult) = Utils._show(io, pr; newlines=true)
 
 struct SamplerPubResult
     data
     metadata
 end
 
-Base.show(io::IO, ::MIME"text/plain", r::SamplerPubResult) =
-    Utils._show(io, r; newlines=true)
-
+function Base.show(io::IO, ::MIME"text/plain", r::SamplerPubResult)
+    return Utils._show(io, r; newlines=true)
+end
 
 struct DataBin{T}
     fields::T
 end
 
-Base.show(io::IO, ::MIME"text/plain", db::DataBin) =
-    Utils._show(io, db; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", db::DataBin) = Utils._show(io, db; newlines=true)
 
 struct ExecutionSpan{T}
     start::Dates.DateTime
@@ -93,8 +97,9 @@ struct PauliLindbladError
     rates::Vector{Float64}
 end
 
-Base.show(io::IO, ::MIME"text/plain", pe::PauliLindbladError) =
-    Utils._show(io, pe; newlines=true)
+function Base.show(io::IO, ::MIME"text/plain", pe::PauliLindbladError)
+    return Utils._show(io, pe; newlines=true)
+end
 
 struct LayerError
     circuit::CircuitString
@@ -102,8 +107,7 @@ struct LayerError
     qubits::Vector{Int}
 end
 
-Base.show(io::IO, ::MIME"text/plain", le::LayerError) =
-    Utils._show(io, le; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", le::LayerError) = Utils._show(io, le; newlines=true)
 
 struct LayerNoise
     unique_mitigated_layers::Int
@@ -112,8 +116,7 @@ struct LayerNoise
     noise_overhead::Float64
 end
 
-Base.show(io::IO, ::MIME"text/plain", le::LayerNoise) =
-    Utils._show(io, le; newlines=true)
+Base.show(io::IO, ::MIME"text/plain", le::LayerNoise) = Utils._show(io, le; newlines=true)
 
 # This does not work because some fields have no copy constructor.
 # I don't see an easy way to get this info without an instance of the obj.

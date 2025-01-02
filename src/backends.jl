@@ -1,6 +1,6 @@
 module Backends
 
-import Dates
+using Dates: Dates
 
 import ..Requests
 import ..Utils
@@ -13,17 +13,11 @@ struct BackendProperties
     backend_version::VersionNumber
     last_update_date::Dates.DateTime
 
-    function BackendProperties(
-        backend_name,
-        backend_version,
-        last_update_date,
-        )
+    function BackendProperties(backend_name, backend_version, last_update_date)
         if isa(last_update_date, String)
             datetime = Decode.parse_response_datetime(last_update_date)
         end
-        return new(backend_name,
-                   VersionNumber(backend_version),
-                   datetime)
+        return new(backend_name, VersionNumber(backend_version), datetime)
     end
 end
 
@@ -40,7 +34,7 @@ function Backend(name::AbstractString)
     last_update_date = props.last_update_date
     props_obj = BackendProperties(backend_name, backend_version, last_update_date)
 
-    Backend(backend_name, VersionNumber(backend_version), props_obj)
+    return Backend(backend_name, VersionNumber(backend_version), props_obj)
 end
 
 # Several words for one thing: provider == instance = hubgroupproject
@@ -60,16 +54,15 @@ function backends(account=nothing; pending=false, testing=false, instance=nothin
         backend_names = filter(!startswith("test_"), backend_names)
     end
     pending || return backend_names
-    pending_jobs =
-        [backend_status(b).pending_jobs for b in backend_names]
+    pending_jobs = [backend_status(b).pending_jobs for b in backend_names]
     names_pending = collect(zip(backend_names, pending_jobs))
-    sort!(names_pending; lt = (x,y) -> x[2] < y[2])
-    names_pending
+    sort!(names_pending; lt=(x, y) -> x[2] < y[2])
+    return names_pending
 end
 
 struct BackendStatus
-#    backend_name::String
-    backend_version::Union{Nothing, VersionNumber}
+    #    backend_name::String
+    backend_version::Union{Nothing,VersionNumber}
     operational::Bool
     pending_jobs::Int
     status_msg::String
@@ -84,14 +77,14 @@ Return status information of `backend_name`.
 """
 function backend_status(backend_name::AbstractString, account=nothing)
     st = Requests.backend_status(backend_name, account)
-    version = isempty(st.backend_version) ?
-        nothing : VersionNumber(st.backend_version)
-    BackendStatus(
+    version = isempty(st.backend_version) ? nothing : VersionNumber(st.backend_version)
+    return BackendStatus(
         # st.backend_name,
         version,
         st.state, # operational
         st.length_queue, # pending_jobs
-        st.message)
+        st.message,
+    )
 end
 
 end # module Backends
