@@ -45,7 +45,6 @@ include("npz2.jl")
 include("bitarraysx.jl")
 include("utils.jl")
 include("circuits.jl")
-#include("some_types.jl")
 include("containers/primitiveresults.jl")
 include("decoding.jl")
 include("json.jl")
@@ -61,8 +60,7 @@ import Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# Comment this out during development for faster compilation when
-# restarting.
-include("precompile.jl")
+# Comment this out during development for faster compilation when restarting.
+# include("precompile.jl")
 
 end # module QiskitRuntime
