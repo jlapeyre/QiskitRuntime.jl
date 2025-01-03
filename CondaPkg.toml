@@ -1,0 +1,4 @@
+[deps]
+qiskit-ibm-runtime = ""
+qiskit = ""
+openssl = ""

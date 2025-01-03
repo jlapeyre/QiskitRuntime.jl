@@ -54,13 +54,14 @@ include("accounts.jl")
 include("requests.jl")
 include("backends.jl")
 include("jobs.jl")
+include("extensions.jl")
+include("extra_envs.jl")
 
 using Reexport: Reexport
 include("api.jl")
 Reexport.@reexport using .API
 
-# Precompiling is broken in CI because there is no qiskit user
-# dir with cached files.
+# Precompiling is broken in CI because there is no qiskit user dir with cached files.
 # So we require an env variable to be set in order to test precompiling locally.
 # Later we will enable it in CI and when distributing, using a user dir in
 # the test dir, or something like that.

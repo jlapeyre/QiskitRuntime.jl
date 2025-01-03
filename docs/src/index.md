@@ -87,3 +87,17 @@ Modules = [QiskitRuntime.PUBs]
 ```@autodocs
 Modules = [QiskitRuntime.Circuits]
 ```
+
+# ExtraEnvs
+
+```@meta
+CurrentModule = QiskitRuntime.ExtraEnvs
+```
+
+```@autodocs
+Modules = [ExtraEnvs]
+```
+
+```@meta
+CurrentModule = QiskitRuntime
+```

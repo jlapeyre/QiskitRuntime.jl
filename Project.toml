@@ -11,12 +11,20 @@ Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 HTTP = "cd3eb016-35fb-5094-929b-558a96fad6f3"
 JSON3 = "0f8b85d8-7281-11e9-16c2-39a750bddbf1"
 LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+Pkg = "44cfe95a-1eb2-52ea-b672-e2afdf69b78f"
 PrecompileTools = "aea7be01-6a6a-4083-8856-8a6e6704d82a"
 Random = "9a3f8284-a2c9-5f02-9a11-845980a1fd5c"
 Reexport = "189a3867-3050-52da-a836-e630ba90ab69"
 SumTypes = "8e1ec7a9-0e02-4297-b0fe-6433085c89f2"
 TranscodingStreams = "3bb67fe8-82b1-5028-8e26-92a6c54297fa"
 URIs = "5c2747f8-b7ea-4ff2-ba2e-563bfd36b1d4"
+
+[weakdeps]
+CondaPkg = "992eb4ea-22a4-4c89-a5bb-47a3300528ab"
+PythonCall = "6099a3de-0909-46bc-b1f4-468b9a2dfc0d"
+
+[extensions]
+PythonExt = ["PythonCall", "CondaPkg"]
 
 [compat]
 Accessors = "0.1.38"
@@ -28,7 +36,10 @@ Documenter = "1.8"
 HTTP = "1.10.10"
 JSON3 = "1.14.0"
 LinearAlgebra = "1.11.0"
+Pkg = "1.11.0"
 PrecompileTools = "1.2.1"
+PythonCall = "0.9"
+CondaPkg = "0.2"
 Random = "1.11.0"
 Reexport = "1.2.2"
 SumTypes = "0.5.8"

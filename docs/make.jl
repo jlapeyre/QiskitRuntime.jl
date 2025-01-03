@@ -25,6 +25,7 @@ makedocs(
         "Environment Variables" => "env_vars.md",
         "Requests" => "requests.md",
         "Id Numbers and Tokens" => "ids.md",
+        "PythonCall and other packages" => "python.md",
         "Development notes" => "dev_notes.md",
         "Index" => "theindex.md",
     ],
