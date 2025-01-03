@@ -48,7 +48,7 @@ Then, do something like
 Unset `JULIA_CONDAPKG_BACKEND` if you have set it. The file [./CondaPkg.toml](https://github.com/jlapeyre/QiskitRuntime.jl/blob/main/CondaPkg.toml) specifies that `PythonCall`, via `CondaPkg` should install qiskit and qiskit-ibm-runtime. See the `CondaPkg` docs for how to add more.
 
 !!! warning
-    I tried using `PythonCall/CondaPkg`. I can use `qiskit`. But not `qiskit-ibm-runtime`.
+    I tried using `PythonCall/CondaPkg`. I can `pyimport("qiskit")`. But not `qiskit-ibm-runtime`.
     There is some binary incompatibility involving openssl.
     There are several GH issues on the `PythonCall` and `CondaPkg` repos.
     And the problem is apparetnly "solved".
@@ -81,6 +81,12 @@ q_1: ┤ X ├
 
 Using `qr()` and `qk()` is not super convenient. But you can't do `using QiskitRuntime.SomeModule: qk, qr` to
 get handles to the modules. Still there could be an easier way.
+
+!!! note
+    Using the `Pkg` package extension features is sort of convenient at the moment. But we will
+    likely instead make a second Julia package that properly depends on both `QiskitRuntime.jl` and
+    `PythonCall.jl`.
+
 
 ```@raw html
 <!--  LocalWords:  PythonCall QiskitRuntime ExtraEnvs toml julia ENV CONDAPKG BACKEND

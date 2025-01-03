@@ -1,4 +1,4 @@
-[deps]
+
+[pip.deps]
 qiskit-ibm-runtime = ""
 qiskit = ""
-openssl = ""
