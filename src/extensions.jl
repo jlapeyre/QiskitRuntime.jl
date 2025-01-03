@@ -14,10 +14,11 @@ otherwise import them piecemeal.
 """
 module Extensions
 
-export qk, qr, encode_circuit
+export qk, qr, encode_circuit, QuantumCircuitT
 
 function qk end
 function qr end
 function encode_circuit end
+function QuantumCircuitT end
 
 end  # module Extensions

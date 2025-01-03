@@ -6,6 +6,10 @@
 #
 # See help for `ExtraEnv`
 
+# This is standard for development
+using Revise
+using QiskitRuntime
+
 using QiskitRuntime.ExtraEnvs
 
 # You can add or remove packages from the list
