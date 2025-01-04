@@ -54,7 +54,6 @@ include("accounts.jl")
 include("requests.jl")
 include("backends.jl")
 include("jobs.jl")
-include("extensions.jl")
 include("extra_envs.jl")
 
 using Reexport: Reexport

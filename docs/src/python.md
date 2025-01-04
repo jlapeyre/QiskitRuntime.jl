@@ -56,13 +56,16 @@ Unset `JULIA_CONDAPKG_BACKEND` if you have set it. The file [./CondaPkg.toml](ht
 
 ### Loading PythonCall
 
+UPDATE: `QiskitRuntime` does not depend (strong, weak or otherwise) on `PythonCall`.
+Another package `QiskitRuntimeX` is being developed to talk to the Python-language
+Qiskit tools.
+
 Assuming you have set up you environment using one of the methods above (or another method),
 you can now load `PythonCall` as follows (or use another method if you prefer)
 
 Read the file [`./extra/extras.jl`](https://github.com/jlapeyre/QiskitRuntime.jl/blob/main/extra/extra.jl).
 Add or remove packages from the list. Then do `include("./extra/extras.jl")`.  The packages in the list
-will then be available without polluting any `Project.toml`s or dependency lists. Furthemore, `PythonCall`
-will be loaded, and the extension [`./ext/PythonExt.jl`](https://github.com/jlapeyre/QiskitRuntime.jl/blob/main/ext/PythonExt.jl) will be loaded as well.
+will then be available without polluting any `Project.toml`s or dependency lists.
 
 You should be able to do this (depending on if and how you edit extra.jl).
 
