@@ -633,7 +633,7 @@ function backend_properties(
     return GET_request("backends/$backend_name/properties", qaccount; updated_before)
 end
 
-function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+function _run_job_dict(backend_name, pubs, qaccount=nothing)
     qaccount = isnothing(qaccount) ? Accounts.QuantumAccount() : qaccount
     body = Dict{Symbol,Any}()
     (hub, group, project) = Instances.as_tuple(qaccount.instance)
@@ -643,11 +643,16 @@ function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
     body[:project] = project
     body[:backend] = backend_name
     params = Dict(
-        :pubs => PUBs.api_data_structure(pubs),
+        :pubs => PUBs.to_rest_api(pubs),
         #        "supports_qiskit" => PUBs.supports_qiskit(pubs), # Documented, but unrecognized
         :version => 2,
     )
     body[:params] = params
+    return body
+end
+
+function run_job(backend_name::AbstractString, pubs, qaccount=nothing)
+    body = _run_job_dict(backend_name, pubs, qaccount)
     body_json = JSON.write(body)
     return POST_request("jobs", body_json, qaccount)
 end

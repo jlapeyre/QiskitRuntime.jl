@@ -1,8 +1,9 @@
 module Utils
 
+# FIXME: find a home for this "declaration"
 # Convert an object to a data structure that JSON3 will convert
 # to JSON to make a REST API request
-function api_data_structure end
+function to_rest_api end
 
 function wantfancyshow(::Type{T}) where {T}
     return false

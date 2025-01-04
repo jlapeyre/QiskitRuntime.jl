@@ -40,6 +40,11 @@ We currently support much of this with conversion to native-Julia types
 * QASM3 programs. These are handled by the REST API as plain strings with no encoding. (maybe QASM3 allows utf-8, which receives standard
   encoding, IDK). We do nothing with this at the moment other than store it.
 
+## Python interop
+
+You frequently need to refer to Python types in Julia docstrings.
+We need a documentation convention to distinguish Python types from Jula types.
+
 ## Precompile
 
 * precompile.jl script works by processing cached jobs in your `~/.qiskit` directory. (We cache

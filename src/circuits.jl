@@ -1,10 +1,11 @@
 module Circuits
 
-import ..Utils: api_data_structure
+import ..Utils: to_rest_api
 
 export AbstractCircuitString, CircuitString, QASMString
 
-abstract type AbstractCircuitString end
+abstract type AbstractCircuit end
+abstract type AbstractCircuitString <:AbstractCircuit end
 
 """
     QASMString
@@ -26,7 +27,7 @@ struct CircuitString <: AbstractCircuitString
     data::String
 end
 
-function api_data_structure(circ_str::CircuitString)
+function to_rest_api(circ_str::CircuitString)
     return Dict(:__type__ => "QuantumCircuit", :__value__ => string(circ_str))
 end
 

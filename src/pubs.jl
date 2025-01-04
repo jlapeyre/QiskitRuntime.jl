@@ -1,13 +1,14 @@
 module PUBs
 
-export SamplerPUB, EstimatorPUB
+export SamplerPUB, EstimatorPUB, AbstractCircuit, CircuitString,
+    QASMString
 
 # internal export
 # supports_qiskit
 
 using SumTypes: @sum_type, @cases
-import ..Circuits: AbstractCircuitString, QASMString, CircuitString
-import ..Utils: api_data_structure
+import ..Circuits: AbstractCircuit, QASMString, CircuitString
+import ..Utils: to_rest_api
 
 ## Primitive Unified Blocks (PUB)
 ## https://docs.quantum.ibm.com/guides/primitive-input-output#pubs
@@ -55,7 +56,7 @@ abstract type AbstractPUB{CircT,ParamsT} end
 
 A [PUB](https://docs.quantum.ibm.com/guides/primitive-input-output#pubs) for the Sampler primitive.
 """
-struct SamplerPUB{CircT<:AbstractCircuitString,ParamsT,ST<:Union{Int,Nothing}} <:
+struct SamplerPUB{CircT<:AbstractCircuit,ParamsT,ST<:Union{Int,Nothing}} <:
        AbstractPUB{CircT,ParamsT}
     _circuit::CircT
     _params::ParamsT
@@ -76,8 +77,8 @@ struct SamplerPUB{CircT<:AbstractCircuitString,ParamsT,ST<:Union{Int,Nothing}} <
 end
 
 # Convert to types that JSON3 knows how to convert to JSON for the REST API.
-function api_data_structure(pub::SamplerPUB)
-    circstr = api_data_structure(pub._circuit)
+function to_rest_api(pub::SamplerPUB)
+    circstr = to_rest_api(pub._circuit)
     params = isnothing(pub._params) ? [] : pub._params
     if isnothing(pub._num_shots)
         return [circstr, params]
@@ -93,7 +94,7 @@ end
 
 A [PUB](https://docs.quantum.ibm.com/guides/primitive-input-output#pubs) for the Estimator primitive.
 """
-struct EstimatorPUB{CircT<:AbstractCircuitString,ParamsT,ObsT} <: AbstractPUB{CircT,ParamsT}
+struct EstimatorPUB{CircT<:AbstractCircuit,ParamsT,ObsT} <: AbstractPUB{CircT,ParamsT}
     _circuit::CircT
     _observables::ObsT # a Vector, or do we need general Array?
     _params::ParamsT
@@ -111,8 +112,8 @@ struct EstimatorPUB{CircT<:AbstractCircuitString,ParamsT,ObsT} <: AbstractPUB{Ci
 end
 
 # Convert to types that JSON3 knows how to convert to JSON for the REST API.
-function api_data_structure(pub::EstimatorPUB)
-    circstr = api_data_structure(pub._circuit)
+function to_rest_api(pub::EstimatorPUB)
+    circstr = to_rest_api(pub._circuit)
     params = isnothing(pub._params) ? [] : pub._params
     if pub._precision > 0
         return [circstr, pub._observables, params, pub._precision]
@@ -120,7 +121,7 @@ function api_data_structure(pub::EstimatorPUB)
     return [circstr, pub._observables, params]
 end
 
-api_data_structure(pubs::AbstractVector{<:AbstractPUB}) = map(api_data_structure, pubs)
+to_rest_api(pubs::AbstractVector{<:AbstractPUB}) = map(to_rest_api, pubs)
 
 # FIXME: We need an organized way to implement an internal API
 # This function should be in an internal API
